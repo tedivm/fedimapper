@@ -12,6 +12,7 @@ class Settings(queuerunner.Settings):
     stale_rescan_hours: int = 6
     unreachable_rescan_hours: int = 24
     debug: bool = False
+    evil_domains: List[str] = ["activitypub-troll.cf"]
     bootstrap_instances: List = [
         # "Official" instance of the org that manages Mastodon.
         "mastodon.social",

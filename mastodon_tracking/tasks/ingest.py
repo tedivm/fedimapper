@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from ..models.ban import Ban
 from ..models.instance import Instance
 from ..services import db, mastodon
+from ..settings import settings
 
 logger = getLogger(__name__)
 
@@ -19,6 +20,11 @@ async def ingest_host(host: str) -> None:
     logger.info(f"Ingesting from {host}")
     ingest_id = str(uuid4())
     ingest_status = "success"
+
+    for suffix in settings.evil_domains:
+        if host.endswith(suffix):
+            logger.info(f"Skipping ingest from {host} for matching evil pattern: {suffix}")
+            return
 
     async with db.get_session() as session:
 
@@ -68,6 +74,7 @@ async def ingest_host(host: str) -> None:
                 }
                 for banned_host in banned
                 if banned_host
+                and len([suffix for suffix in settings.evil_domains if banned_host["domain"].endswith(suffix)]) == 0
             ]
             if len(ban_values) > 0:
                 ban_insert_stmt = insert(Ban).values(ban_values)
@@ -94,14 +101,25 @@ async def ingest_host(host: str) -> None:
                     "ingest_id": ingest_id,
                 }
                 for peer_host in peers
-                if peer_host
+                if peer_host and len([suffix for suffix in settings.evil_domains if peer_host.endswith(suffix)]) == 0
             ]
+
             if len(insert_peer_values) > 0:
+                # Add Peers to Instances for future processing.
+                insert_instance_values = [{"host": peer_host} for peer_host in peers]
+                insert_instance_stmt = (
+                    insert(Instance).values(insert_instance_values).on_conflict_do_nothing(index_elements=["host"])
+                )
+                await session.execute(insert_instance_stmt)
+                await session.commit()
+
+                # Save Peer Relationship
                 insert_peer_stmt = (
                     insert(Peer).values(insert_peer_values).on_conflict_do_nothing(index_elements=["host", "peer_host"])
                 )
                 await session.execute(insert_peer_stmt)
 
+            # Delete old relationships that weren't in this ingest.
             peer_delete_stmt = delete(Peer).where(and_(Peer.host == host, Peer.ingest_id != ingest_id))
             await session.execute(peer_delete_stmt)
             await session.commit()
