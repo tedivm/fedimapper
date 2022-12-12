@@ -106,7 +106,7 @@ async def ingest_host(host: str) -> None:
 
             if len(insert_peer_values) > 0:
                 # Add Peers to Instances for future processing.
-                insert_instance_values = [{"host": peer_host} for peer_host in peers]
+                insert_instance_values = [{"host": peer_host["peer_host"]} for peer_host in insert_peer_values]
                 insert_instance_stmt = (
                     insert(Instance).values(insert_instance_values).on_conflict_do_nothing(index_elements=["host"])
                 )
