@@ -3,11 +3,10 @@ from logging import getLogger
 from uuid import uuid4
 
 import httpx
+from mastodon_tracking.models.peer import Peer
 from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
-
-from mastodon_tracking.models.peer import Peer
 
 from ..models.ban import Ban
 from ..models.instance import Instance
@@ -34,7 +33,7 @@ async def ingest_host(host: str) -> None:
             await session.commit()
             return
         except:
-            instance.last_ingest_status = "failed"
+            instance.last_ingest_status = "no_meta"
             logger.error(f"Unable to get Metadata for {host}")
             await session.commit()
             return
@@ -50,8 +49,11 @@ async def ingest_host(host: str) -> None:
 
         instance.thumbnail = metadata.get("thumbnail", None)
 
-        instance.registration_open = metadata.get("registrations", None)
+        reg_open = metadata.get("registrations", None)
+        if reg_open != None:
+            instance.registration_open = bool(reg_open)
         instance.approval_required = metadata.get("approval_required", None)
+        await session.commit()
 
         try:
             # Add banned servers.
@@ -65,16 +67,19 @@ async def ingest_host(host: str) -> None:
                     "comment": banned_host["comment"],
                 }
                 for banned_host in banned
+                if banned_host
             ]
-            ban_insert_stmt = insert(Ban).values(ban_values)
-            ban_update_statement = ban_insert_stmt.on_conflict_do_update(
-                index_elements=["host", "banned_host"],
-                set_=dict(severity=ban_insert_stmt.excluded.severity, comment=ban_insert_stmt.excluded.comment),
-            )
-            await session.execute(ban_update_statement)
+            if len(ban_values) > 0:
+                ban_insert_stmt = insert(Ban).values(ban_values)
+                ban_update_statement = ban_insert_stmt.on_conflict_do_update(
+                    index_elements=["host", "banned_host"],
+                    set_=dict(severity=ban_insert_stmt.excluded.severity, comment=ban_insert_stmt.excluded.comment),
+                )
+                await session.execute(ban_update_statement)
 
             ban_delete_stmt = delete(Ban).where(and_(Ban.host == host, Ban.ingest_id != ingest_id))
             await session.execute(ban_delete_stmt)
+            await session.commit()
         except:
             logger.error(f"Unable to get instance ban data for {host}")
             ingest_status = "failed"
@@ -89,21 +94,17 @@ async def ingest_host(host: str) -> None:
                     "ingest_id": ingest_id,
                 }
                 for peer_host in peers
+                if peer_host
             ]
-            insert_peer_stmt = (
-                insert(Peer).values(insert_peer_values).on_conflict_do_nothing(index_elements=["host", "peer_host"])
-            )
-            await session.execute(insert_peer_stmt)
+            if len(insert_peer_values) > 0:
+                insert_peer_stmt = (
+                    insert(Peer).values(insert_peer_values).on_conflict_do_nothing(index_elements=["host", "peer_host"])
+                )
+                await session.execute(insert_peer_stmt)
 
             peer_delete_stmt = delete(Peer).where(and_(Peer.host == host, Peer.ingest_id != ingest_id))
             await session.execute(peer_delete_stmt)
-
-            # Add Peers to Instances for future processing.
-            insert_instance_values = [{"host": peer_host} for peer_host in peers]
-            insert_instance_stmt = (
-                insert(Instance).values(insert_instance_values).on_conflict_do_nothing(index_elements=["host"])
-            )
-            await session.execute(insert_instance_stmt)
+            await session.commit()
 
         except:
             ingest_status = "failed"
