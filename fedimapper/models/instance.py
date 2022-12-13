@@ -26,3 +26,7 @@ class Instance(Base):
 
     has_public_bans = Column(Boolean, nullable=True)
     has_public_peers = Column(Boolean, nullable=True)
+
+    software = Column(String, nullable=True)
+    mastodon_version = Column(String, nullable=True)
+    software_version = Column(String, nullable=True)

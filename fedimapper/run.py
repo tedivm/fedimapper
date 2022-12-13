@@ -2,9 +2,10 @@ import asyncio
 import datetime
 import logging
 
-from mastodon_tracking.models.instance import Instance
 from sqlalchemy import and_, select
 from tld.utils import update_tld_names
+
+from fedimapper.models.instance import Instance
 
 from .services import db
 from .settings import settings

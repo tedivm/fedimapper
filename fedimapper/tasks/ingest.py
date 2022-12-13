@@ -4,11 +4,12 @@ from typing import List
 from uuid import UUID, uuid4
 
 import httpx
-from mastodon_tracking.models.peer import Peer
 from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 from tld import get_tld
+
+from fedimapper.models.peer import Peer
 
 from ..models.ban import Ban
 from ..models.evil import Evil
@@ -62,7 +63,15 @@ async def save_metadata(session: Session, host: str) -> Instance | None:
     instance.title = metadata.get("title", None)
     instance.short_description = metadata.get("short_description", None)
     instance.email = metadata.get("email", None)
-    instance.version = metadata.get("version", None)
+
+    version_string = metadata.get("version", None)
+    if version_string:
+        instance.version = version_string
+        version_breakdown = mastodon.get_version_breakdown(version_string)
+        if version_breakdown:
+            instance.software = version_breakdown.software
+            instance.software_version = version_breakdown.software_version
+            instance.mastodon_version = version_breakdown.mastodon_version
 
     instance.user_count = metadata.get("stats", {}).get("user_count", None)
     instance.status_count = metadata.get("stats", {}).get("status_count", None)

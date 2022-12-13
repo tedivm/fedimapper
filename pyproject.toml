@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [tool.isort]
 profile = "black"
 skip = [".venv"]
-src_paths = ["mastodon_tracking", "tests"]
+src_paths = ["fedimapper", "tests"]
 
 [tool.black]
 exclude = '''

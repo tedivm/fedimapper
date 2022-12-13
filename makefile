@@ -21,7 +21,12 @@ pip:
 
 $(VENV_PACKAGE_CHECK): install .venv pip
 
+#
+# Application Specific
+#
 
+big_crawl:
+	. .venv/bin/activate && NUM_PROCESSES=50 LOOKUP_BLOCK_SIZE=200 python -m fedimapper.run
 
 #
 # Formatting
@@ -50,11 +55,11 @@ tests: install pytest isort_check black_check mypy_check
 
 .PHONY: pytest
 pytest:
-	$(PYTHON) -m pytest --cov=./mastodon_tracking --cov-report=term-missing tests
+	$(PYTHON) -m pytest --cov=./fedimapper --cov-report=term-missing tests
 
 .PHONY: pytest_loud
 pytest_loud:
-	$(PYTHON) -m pytest -s --cov=./mastodon_tracking --cov-report=term-missing tests
+	$(PYTHON) -m pytest -s --cov=./fedimapper --cov-report=term-missing tests
 
 .PHONY: isort_check
 isort_check:
@@ -66,7 +71,7 @@ black_check:
 
 .PHONY: mypy_check
 mypy_check:
-	$(PYTHON) -m mypy mastodon_tracking
+	$(PYTHON) -m mypy fedimapper
 
 
 #

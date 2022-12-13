@@ -7,7 +7,7 @@ from .utils import queuerunner
 
 
 class Settings(queuerunner.Settings):
-    project_name: str = "mastodon_tracking"
+    project_name: str = "fedimapper"
     database_url: str = "sqlite:///./test.db"
     stale_rescan_hours: int = 6
     unreachable_rescan_hours: int = 24
