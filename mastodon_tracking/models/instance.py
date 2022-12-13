@@ -23,3 +23,6 @@ class Instance(Base):
 
     registration_open = Column(Boolean, nullable=True)
     approval_required = Column(Boolean, nullable=True)
+
+    has_public_bans = Column(Boolean, nullable=True)
+    has_public_peers = Column(Boolean, nullable=True)

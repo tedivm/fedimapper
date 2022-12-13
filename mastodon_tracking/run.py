@@ -4,6 +4,7 @@ import logging
 
 from mastodon_tracking.models.instance import Instance
 from sqlalchemy import and_, select
+from tld.utils import update_tld_names
 
 from .services import db
 from .settings import settings
@@ -58,5 +59,8 @@ async def get_next_instance(desired: int = None) -> str:
 
 
 if __name__ == "__main__":
+    print("Update TLD database.")
+    update_tld_names()
+    print("Run queue processing.")
     runner = QueueRunner("ingest", reader=ingest_host, writer=get_next_instance, settings=settings)
     asyncio.run(runner.main())
