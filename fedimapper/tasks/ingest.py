@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import List
 from uuid import UUID, uuid4
 
+import cymruwhois
 import httpx
 from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
@@ -11,10 +12,11 @@ from tld import get_tld
 
 from fedimapper.models.peer import Peer
 
+from ..models.asn import ASN
 from ..models.ban import Ban
 from ..models.evil import Evil
 from ..models.instance import Instance
-from ..services import db, mastodon
+from ..services import db, mastodon, networking
 from ..settings import settings
 
 logger = getLogger(__name__)
@@ -49,16 +51,29 @@ async def save_metadata(session: Session, host: str) -> Instance | None:
 
     try:
         metadata = mastodon.get_metadata(host)
+        ip_address = networking.get_ip_from_url(host)
+        if not ip_address:
+            instance.last_ingest_status = "no_dns"
+            logger.warning(f"No DNS for {host}")
+            await session.commit()
+            return
+
+        asn_info = networking.get_asn_data(ip_address)
+        if asn_info:
+            await save_asn(session, asn_info)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
-        logger.error(f"Unable to reach host {host}")
+        logger.warning(f"Unable to reach host {host}")
         await session.commit()
         return
     except:
         instance.last_ingest_status = "no_meta"
-        logger.error(f"Unable to get Metadata for {host}")
+        logger.warning(f"Unable to get Metadata for {host}")
         await session.commit()
         return
+
+    instance.ip_address = ip_address
+    instance.asn = asn_info.asn
 
     instance.title = metadata.get("title", None)
     instance.short_description = metadata.get("short_description", None)
@@ -76,7 +91,6 @@ async def save_metadata(session: Session, host: str) -> Instance | None:
     instance.user_count = metadata.get("stats", {}).get("user_count", None)
     instance.status_count = metadata.get("stats", {}).get("status_count", None)
     instance.domain_count = metadata.get("stats", {}).get("domain_count", None)
-
     instance.thumbnail = metadata.get("thumbnail", None)
 
     reg_open = metadata.get("registrations", None)
@@ -120,7 +134,7 @@ async def save_blocked_instances(session: Session, instance: Instance):
         await session.commit()
     except:
         instance.has_public_bans = False
-        logger.error(f"Unable to get instance ban data for {instance.host}")
+        logger.warning(f"Unable to get instance ban data for {instance.host}")
 
 
 async def save_peered_instance(session: Session, instance: Instance):
@@ -162,14 +176,13 @@ async def save_peered_instance(session: Session, instance: Instance):
 
     except:
         instance.has_public_peers = False
-        logger.error(f"Unable to get instance peer data for {instance.host}")
+        logger.warning(f"Unable to get instance peer data for {instance.host}")
 
 
 async def save_evil_domains(session: Session, domains):
     if len(domains) <= 0:
         return
     evil_values = [{"domain": x} for x in domains]
-    print(evil_values)
     evil_insert_stmt = insert(Evil).values(evil_values)
     evil_update_statement = evil_insert_stmt.on_conflict_do_nothing(index_elements=["domain"])
     await session.execute(evil_update_statement)
@@ -184,6 +197,20 @@ async def get_or_save_host(db: Session, host) -> Instance:
     db.add(instance)
     await db.commit()
     return instance
+
+
+async def save_asn(session: Session, asn: cymruwhois.asrecord) -> None:
+    asn_insert_stmt = insert(ASN).values([{"asn": asn.asn, "cc": asn.cc, "owner": asn.owner, "prefix": asn.prefix}])
+    asn_update_statement = asn_insert_stmt.on_conflict_do_update(
+        index_elements=["asn"],
+        set_=dict(
+            cc=asn_insert_stmt.excluded.cc,
+            owner=asn_insert_stmt.excluded.owner,
+            prefix=asn_insert_stmt.excluded.prefix,
+        ),
+    )
+    await session.execute(asn_update_statement)
+    await session.commit()
 
 
 async def get_spammers_from_list(hosts: List[str]):

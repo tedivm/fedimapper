@@ -16,7 +16,7 @@ all: $(VENV_PACKAGE_CHECK)
 install:
 	pyenv install --skip-existing $(PYTHON_VERSION)
 
-pip:
+pip: .venv
 	$(PYTHON) -m pip install -e .[dev]
 
 $(VENV_PACKAGE_CHECK): install .venv pip

@@ -12,7 +12,7 @@ from .settings import settings
 from .tasks.ingest import ingest_host
 from .utils.queuerunner import QueueRunner
 
-NOT_MASTODON_STATUSES = ["unreachable", "no_meta"]
+NOT_MASTODON_STATUSES = ["unreachable", "no_meta", "no_dns"]
 
 
 async def get_unscanned(session, desired):

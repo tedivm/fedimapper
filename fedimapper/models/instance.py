@@ -30,3 +30,6 @@ class Instance(Base):
     software = Column(String, nullable=True)
     mastodon_version = Column(String, nullable=True)
     software_version = Column(String, nullable=True)
+
+    ip_address = Column(String, nullable=True)
+    asn = Column(String, nullable=True)
