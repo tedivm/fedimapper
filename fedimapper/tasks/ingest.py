@@ -213,7 +213,6 @@ async def save_peertube_peered_instance(session: Session, instance: Instance) ->
     try:
         # Will throw exceptions when the peer list isn't public.
         peers_full = peertube.get_peers(instance.host)
-        print(peers_full)
         instance.domain_count = peers_full.get("total", None)
         instance.has_public_peers = True
         await session.commit()
