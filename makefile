@@ -24,9 +24,14 @@ $(VENV_PACKAGE_CHECK): install .venv pip
 #
 # Application Specific
 #
-
+PHONY: big_crawl
 big_crawl:
 	. .venv/bin/activate && NUM_PROCESSES=50 LOOKUP_BLOCK_SIZE=200 python -m fedimapper.run
+
+PHONY: medium_crawl
+medium_crawl:
+	. .venv/bin/activate && NUM_PROCESSES=25 LOOKUP_BLOCK_SIZE=100 python -m fedimapper.run
+
 
 #
 # Formatting

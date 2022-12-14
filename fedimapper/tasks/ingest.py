@@ -81,12 +81,12 @@ async def ingest_host(host: str) -> None:
 
 async def save_mastodon_metadata(session: Session, instance: Instance) -> bool:
     try:
-        metadata = mastodon.get_metadata(host)
+        metadata = mastodon.get_metadata(instance.host)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
         logger.warning(f"Unable to reach host {instance.host}")
         await session.commit()
-        return
+        return False
     except:
         logger.debug(f"Host is not Peertube Compatible: {instance.host}")
         return False
