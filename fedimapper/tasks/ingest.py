@@ -51,6 +51,12 @@ async def ingest_host(host: str) -> None:
             await save_asn(session, asn_info)
             logger.info(f"ASN Saved for {host}")
 
+        # Add Reachability Check on port 443
+        if not networking.can_access_https(host):
+            instance.last_ingest_status = "unreachable"
+            await session.commit()
+            return
+
         # Try Mastodon based APIs. There are a lot of non-mastodon services which
         # support the Mastodon APIs, or at least the informational ones.
         if await save_mastodon_metadata(session, instance):
