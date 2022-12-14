@@ -12,7 +12,7 @@ from .settings import settings
 from .tasks.ingest import ingest_host
 from .utils.queuerunner import QueueRunner
 
-NOT_MASTODON_STATUSES = ["unreachable", "no_meta", "no_dns"]
+NOT_MASTODON_STATUSES = ["unreachable", "unknown_service", "no_dns"]
 
 
 async def get_unscanned(session, desired):
@@ -34,7 +34,7 @@ async def get_unreachable(session, desired):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(days=settings.unreachable_rescan_hours)
     select_stmt = (
         select(Instance)
-        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(["unreachable", "no_meta"])))
+        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(NOT_MASTODON_STATUSES)))
         .limit(desired)
     )
     return await session.execute(select_stmt)
