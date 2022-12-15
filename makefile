@@ -1,25 +1,49 @@
 SHELL:=/bin/bash
-PYTHON:=. .venv/bin/activate && python
+
 PYTHON_VERSION:=$(shell cat .python-version)
 PYTHON_SHORT_VERSION:=$(shell cat .python-version | grep -o '[0-9].[0-9]*')
-VENV_PACKAGE_CHECK:=.venv/lib/python$(PYTHON_SHORT_VERSION)/site-packages/piptools/
 MIGRATION_DATABASE:=./migrate.db
 
+ifndef USE_SYSTEM_PYTHON
+	ifdef CI
+		USE_SYSTEM_PYTHON:=true
+	endif
+endif
+
+ifeq ($(USE_SYSTEM_PYTHON), true)
+	PYTHON_PACKAGE_PATH:=$(shell python -c "import sys; print(sys.path[-1])")
+	PYTHON := python
+	PYTHON_VENV :=
+	PYTHON_PYENV :=
+else
+	PYTHON_PACKAGE_PATH:=.venv/lib/python$(PYTHON_SHORT_VERSION)/site-packages
+	PYTHON := . .venv/bin/activate && python
+	PYTHON_VENV := .venv
+	PYTHON_PYENV := pyenv
+endif
+
+# Used to confirm that pip has run at least once
+PACKAGE_CHECK:=$(PYTHON_PACKAGE_PATH)/piptools
+PYTHON_DEPS := $(PACKAGE_CHECK)
 
 .PHONY: all
-all: $(VENV_PACKAGE_CHECK)
+all: $(PACKAGE_CHECK)
+
+.PHONY: install
+install: $(PYTHON_PYENV) $(PYTHON_VENV) pip
 
 .venv:
 	python -m venv .venv
 
-.PHONY: install
-install:
+.PHONY: pyenv
+pyenv:
 	pyenv install --skip-existing $(PYTHON_VERSION)
 
-pip: .venv
+pip: $(PYTHON_VENV)
 	$(PYTHON) -m pip install -e .[dev]
 
-$(VENV_PACKAGE_CHECK): install .venv pip
+$(PACKAGE_CHECK): $(PYTHON_VENV)
+	$(PYTHON) -m pip install -e .[dev]
 
 #
 # Application Specific
@@ -38,16 +62,16 @@ medium_crawl:
 #
 
 .PHONY: pretty
-pretty:
+pretty: $(PYTHON_DEPS)
 	$(PYTHON) -m black . && \
 	isort .
 
 .PHONY: black_fixes
-black_fixes:
+black_fixes: $(PYTHON_DEPS)
 	$(PYTHON) -m black .
 
 .PHONY: isort_fixes
-isort_fixes:
+isort_fixes: $(PYTHON_DEPS)
 	$(PYTHON) -m isort .
 
 
@@ -59,23 +83,23 @@ isort_fixes:
 tests: install pytest isort_check black_check mypy_check
 
 .PHONY: pytest
-pytest:
+pytest: $(PYTHON_DEPS)
 	$(PYTHON) -m pytest --cov=./fedimapper --cov-report=term-missing tests
 
 .PHONY: pytest_loud
-pytest_loud:
+pytest_loud: $(PYTHON_DEPS)
 	$(PYTHON) -m pytest -s --cov=./fedimapper --cov-report=term-missing tests
 
 .PHONY: isort_check
-isort_check:
+isort_check: $(PYTHON_DEPS)
 	$(PYTHON) -m isort --check-only .
 
 .PHONY: black_check
-black_check:
+black_check: $(PYTHON_DEPS)
 	$(PYTHON) -m black . --check
 
 .PHONY: mypy_check
-mypy_check:
+mypy_check: $(PYTHON_DEPS)
 	$(PYTHON) -m mypy fedimapper
 
 
@@ -91,10 +115,10 @@ rebuild_dependencies:
 .PHONY: dependencies
 dependencies: requirements.txt requirements-dev.txt
 
-requirements.txt: $(VENV_PACKAGE_CHECK) pyproject.toml
+requirements.txt: $(PYTHON_DEPS) pyproject.toml
 	$(PYTHON) -m piptools compile --upgrade --output-file=requirements.txt pyproject.toml
 
-requirements-dev.txt: $(VENV_PACKAGE_CHECK) pyproject.toml
+requirements-dev.txt: $(PYTHON_DEPS) pyproject.toml
 	$(PYTHON) -m piptools compile --upgrade --output-file=requirements-dev.txt --extra=dev pyproject.toml
 
 
@@ -103,7 +127,7 @@ requirements-dev.txt: $(VENV_PACKAGE_CHECK) pyproject.toml
 #
 
 .PHONY: build
-build: $(VENV_PACKAGE_CHECK)
+build: $(PYTHON_DEPS)
 	$(PYTHON) -m build
 
 
