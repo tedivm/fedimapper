@@ -48,11 +48,11 @@ $(PACKAGE_CHECK): $(PYTHON_VENV)
 #
 PHONY: big_crawl
 big_crawl:
-	. .venv/bin/activate && NUM_PROCESSES=50 LOOKUP_BLOCK_SIZE=200 python -m fedimapper.run
+	$(PYTHON) -m fedimapper.cli crawl --num-processes=50
 
 PHONY: medium_crawl
 medium_crawl:
-	. .venv/bin/activate && NUM_PROCESSES=25 LOOKUP_BLOCK_SIZE=100 python -m fedimapper.run
+	$(PYTHON) -m fedimapper.cli crawl --num-processes=25
 
 
 #
@@ -138,8 +138,10 @@ build: $(PYTHON_DEPS)
 run_migrations:
 	$(PYTHON) -m alembic upgrade head
 
+.PHONY: reset_db
 reset_db: clear_db run_migrations
 
+.PHONY: clear_db
 clear_db:
 	rm -Rf test.db*
 

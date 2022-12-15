@@ -183,9 +183,3 @@ def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
             logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
             time.sleep(settings["empty_queue_sleep_time"])
             continue
-
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG, format="%(asctime)s %(levelname)s %(message)s")
-    runner = QueueRunner("main", reader=reader_test, writer=writer_test)
-    runner.main()

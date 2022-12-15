@@ -4,9 +4,15 @@ from functools import wraps
 
 import typer
 from ruamel.yaml import YAML
+from tld.utils import update_tld_names
 
+from .run import get_next_instance
 from .services import mastodon
+from .settings import settings
 from .tasks import ingest
+from .tasks.ingest import ingest_host
+from .utils.queuerunner import QueueRunner
+from .utils.queuerunner import Settings as QueueSettings
 
 yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
@@ -50,6 +56,21 @@ def instance_blocks(host: str):
 async def ingest_instance(host: str):
     await ingest.ingest_host(host)
     typer.echo("Ingest complete.")
+
+
+@app.command()
+@syncify
+async def crawl(
+    num_processes: int = typer.Option(None, help="Last name of person to greet."),
+):
+    typer.echo("Update TLD database.")
+    update_tld_names()
+    typer.echo("Run queue processing.")
+
+    queue_settings = QueueSettings(num_processes=num_processes, lookup_block_size=num_processes * 4)
+
+    runner = QueueRunner("ingest", reader=ingest_host, writer=get_next_instance, settings=queue_settings)
+    await runner.main()
 
 
 if __name__ == "__main__":

@@ -57,11 +57,3 @@ async def get_next_instance(desired: int = None) -> str:
     if desired > 0:
         for host in settings.bootstrap_instances:
             yield host
-
-
-if __name__ == "__main__":
-    print("Update TLD database.")
-    update_tld_names()
-    print("Run queue processing.")
-    runner = QueueRunner("ingest", reader=ingest_host, writer=get_next_instance, settings=settings)
-    asyncio.run(runner.main())
