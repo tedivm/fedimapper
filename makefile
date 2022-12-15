@@ -4,22 +4,20 @@ PYTHON_VERSION:=$(shell cat .python-version)
 PYTHON_SHORT_VERSION:=$(shell cat .python-version | grep -o '[0-9].[0-9]*')
 MIGRATION_DATABASE:=./migrate.db
 
-ifndef USE_SYSTEM_PYTHON
-	ifdef CI
-		USE_SYSTEM_PYTHON:=true
-	endif
+ifdef CI
+	PYTHON_PYENV :=
+else
+	PYTHON_PYENV := pyenv
 endif
 
 ifeq ($(USE_SYSTEM_PYTHON), true)
 	PYTHON_PACKAGE_PATH:=$(shell python -c "import sys; print(sys.path[-1])")
 	PYTHON := python
 	PYTHON_VENV :=
-	PYTHON_PYENV :=
 else
 	PYTHON_PACKAGE_PATH:=.venv/lib/python$(PYTHON_SHORT_VERSION)/site-packages
 	PYTHON := . .venv/bin/activate && python
 	PYTHON_VENV := .venv
-	PYTHON_PYENV := pyenv
 endif
 
 # Used to confirm that pip has run at least once
