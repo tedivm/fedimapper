@@ -17,8 +17,6 @@ class Settings(queuerunner.Settings):
     bootstrap_instances: List = [
         # "Official" instance of the org that manages Mastodon.
         "mastodon.social",
-        # Largest Asian Instance
-        "pawoo.net",
     ]
 
 
