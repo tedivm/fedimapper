@@ -1,4 +1,5 @@
 import asyncio
+import sqlite3
 import sys
 from functools import wraps
 
@@ -71,6 +72,19 @@ async def crawl(
 
     runner = QueueRunner("ingest", reader=ingest_host, writer=get_next_instance, settings=queue_settings)
     await runner.main()
+
+
+@app.command()
+def vacuum_database():
+    sqlite_prefix = "sqlite:///"
+    if not settings.database_url.startswith(sqlite_prefix):
+        typer.echo("Vacuum only works with sqlite databases.")
+        sys.exit(1)
+
+    db_file = settings.database_url.replace(sqlite_prefix, "")
+    conn = sqlite3.connect(db_file, isolation_level=None)
+    conn.execute("VACUUM")
+    conn.close()
 
 
 if __name__ == "__main__":

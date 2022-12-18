@@ -145,6 +145,10 @@ reset_db: clear_db run_migrations
 clear_db:
 	rm -Rf test.db*
 
+.PHONY: vacuum_db
+vacuum_db:
+	$(PYTHON) -m fedimapper.cli vacuum-database
+
 .PHONY: create_migration
 create_migration:
 	@if [ -z "$(MESSAGE)" ]; then echo "Please add a message parameter for the migration (make create_migration MESSAGE=\"database migration notes\")."; exit 1; fi
