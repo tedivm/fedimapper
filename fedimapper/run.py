@@ -1,8 +1,10 @@
 import asyncio
 import datetime
 import logging
+from logging import getLogger
 
 from sqlalchemy import and_, select
+from sqlalchemy.dialects.sqlite import insert
 from tld.utils import update_tld_names
 
 from fedimapper.models.instance import Instance
@@ -13,6 +15,17 @@ from .tasks.ingest import ingest_host
 from .utils.queuerunner import QueueRunner
 
 NOT_MASTODON_STATUSES = ["unreachable", "unknown_service", "no_dns"]
+
+logger = logging.getLogger(__name__)
+
+
+async def bootstrap(session):
+    insert_instance_values = [{"host": host} for host in settings.bootstrap_instances]
+    insert_instance_stmt = (
+        insert(Instance).values(insert_instance_values).on_conflict_do_nothing(index_elements=["host"])
+    )
+    await session.execute(insert_instance_stmt)
+    await session.commit()
 
 
 async def get_unscanned(session, desired):
@@ -45,6 +58,7 @@ async def get_unreachable(session, desired):
 async def get_next_instance(desired: int = None) -> str:
 
     async with db.get_session() as session:
+        await bootstrap(session)
         for lookup in [get_unscanned, get_stale, get_unreachable]:
             results = await lookup(session, desired)
             for row in results:
@@ -57,5 +71,4 @@ async def get_next_instance(desired: int = None) -> str:
 
     # Start with our bootstrap instances to ensure we have something to work with.
     if desired > 0:
-        for host in settings.bootstrap_instances:
-            yield host
+        logger.info("All instances have been crawled- nothing available.")
