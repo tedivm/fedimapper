@@ -13,7 +13,7 @@ from tld import get_tld
 from ..models.asn import ASN
 from ..models.ban import Ban
 from ..models.evil import Evil
-from ..models.instance import Instance
+from ..models.instance import Instance, InstanceStats
 from ..models.peer import Peer
 from ..services import db, mastodon, networking, peertube
 from ..settings import settings
@@ -39,7 +39,7 @@ async def ingest_host(host: str) -> None:
         instance = await get_or_save_host(session, host)
         instance.last_ingest = datetime.datetime.utcnow()
         if not ip_address:
-            logger.warning(f"No DNS for {host}")
+            logger.info(f"No DNS for {host}")
             instance.last_ingest_status = "no_dns"
             await session.commit()
             return
@@ -49,7 +49,7 @@ async def ingest_host(host: str) -> None:
         if asn_info:
             instance.asn = asn_info.asn
             await save_asn(session, asn_info)
-            logger.info(f"ASN Saved for {host}")
+            logger.debug(f"ASN Saved for {host}")
 
         # Add Reachability Check on port 443
         if not networking.can_access_https(host):
@@ -66,7 +66,7 @@ async def ingest_host(host: str) -> None:
 
             instance.last_ingest_status = "success"
             await session.commit()
-            logger.info(f"Finished processing {host}")
+            logger.info(f"Successfully processed {host}")
             return
 
         # The next most common set of services that don't support the above APIs
@@ -78,10 +78,11 @@ async def ingest_host(host: str) -> None:
             # PeerTube doesn't support public ban lists at all.
             instance.has_public_bans = False
             await session.commit()
-            logger.info(f"Finished processing {host}")
+            logger.info(f"Successfully processed {host}")
             return
 
         instance.last_ingest_status = "unknown_service"
+        logger.info(f"Unable to process {host}")
         await session.commit()
 
 
@@ -90,7 +91,7 @@ async def save_mastodon_metadata(session: Session, instance: Instance) -> bool:
         metadata = mastodon.get_metadata(instance.host)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
-        logger.warning(f"Unable to reach host {instance.host}")
+        logger.info(f"Unable to reach host {instance.host}")
         await session.commit()
         return False
     except:
@@ -110,15 +111,23 @@ async def save_mastodon_metadata(session: Session, instance: Instance) -> bool:
             instance.software_version = version_breakdown.software_version
             instance.mastodon_version = version_breakdown.mastodon_version
 
-    instance.user_count = metadata.get("stats", {}).get("user_count", None)
-    instance.status_count = metadata.get("stats", {}).get("status_count", None)
-    instance.domain_count = metadata.get("stats", {}).get("domain_count", None)
+    instance.current_user_count = metadata.get("stats", {}).get("user_count", None)
+    instance.current_status_count = metadata.get("stats", {}).get("status_count", None)
+    instance.current_domain_count = metadata.get("stats", {}).get("domain_count", None)
     instance.thumbnail = metadata.get("thumbnail", None)
 
     reg_open = metadata.get("registrations", None)
     if reg_open != None:
         instance.registration_open = bool(reg_open)
     instance.approval_required = metadata.get("approval_required", None)
+
+    instance_stats = InstanceStats(
+        host=instance.host,
+        user_count=instance.current_user_count,
+        status_count=instance.current_status_count,
+        domain_count=instance.current_domain_count,
+    )
+    session.add(instance_stats)
     await session.commit()
     return True
 
@@ -156,7 +165,7 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
         await session.commit()
     except:
         instance.has_public_bans = False
-        logger.warning(f"Unable to get instance ban data for {instance.host}")
+        logger.debug(f"Unable to get instance ban data for {instance.host}")
 
 
 async def save_mastodon_peered_instance(session: Session, instance: Instance):
@@ -169,7 +178,7 @@ async def save_mastodon_peered_instance(session: Session, instance: Instance):
     except:
         instance.has_public_peers = False
         await session.commit()
-        logger.warning(f"Unable to get instance peer data for {instance.host}")
+        logger.debug(f"Unable to get instance peer data for {instance.host}")
 
 
 async def save_peertube_metadata(session: Session, instance: Instance) -> bool:
@@ -178,7 +187,7 @@ async def save_peertube_metadata(session: Session, instance: Instance) -> bool:
         metadata = peertube.get_metadata(instance.host)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
-        logger.warning(f"Unable to reach host {instance.host}")
+        logger.info(f"Unable to reach host {instance.host}")
         await session.commit()
         return False
     except:

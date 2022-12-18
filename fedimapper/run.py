@@ -25,6 +25,7 @@ async def get_stale(session, desired):
     select_stmt = (
         select(Instance)
         .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.not_in(NOT_MASTODON_STATUSES)))
+        .order_by(Instance.last_ingest.asc())
         .limit(desired)
     )
     return await session.execute(select_stmt)
@@ -35,6 +36,7 @@ async def get_unreachable(session, desired):
     select_stmt = (
         select(Instance)
         .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(NOT_MASTODON_STATUSES)))
+        .order_by(Instance.last_ingest.asc())
         .limit(desired)
     )
     return await session.execute(select_stmt)

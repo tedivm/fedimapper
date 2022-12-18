@@ -1,4 +1,5 @@
-from sqlalchemy import Boolean, Column, DateTime, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Index, Integer, String
+from sqlalchemy.sql import func
 
 from .base import Base
 
@@ -15,9 +16,9 @@ class Instance(Base):
     email = Column(String, nullable=True)
     version = Column(String, nullable=True)
 
-    user_count = Column(Integer, nullable=True)
-    status_count = Column(Integer, nullable=True)
-    domain_count = Column(Integer, nullable=True)
+    current_user_count = Column(Integer, nullable=True)
+    current_status_count = Column(Integer, nullable=True)
+    current_domain_count = Column(Integer, nullable=True)
 
     thumbnail = Column(String, nullable=True)
 
@@ -33,3 +34,16 @@ class Instance(Base):
 
     ip_address = Column(String, nullable=True)
     asn = Column(String, nullable=True)
+
+
+Index("idx_instance_status_time", Instance.last_ingest_status, Instance.last_ingest)
+
+
+class InstanceStats(Base):
+    __tablename__ = "instance_stats"
+
+    host = Column(String, primary_key=True)
+    ingest_time = Column(DateTime, primary_key=True, server_default=func.now())
+    user_count = Column(Integer, nullable=True)
+    status_count = Column(Integer, nullable=True)
+    domain_count = Column(Integer, nullable=True)
