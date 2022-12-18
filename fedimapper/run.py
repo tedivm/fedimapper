@@ -1,4 +1,3 @@
-import asyncio
 import datetime
 import logging
 from logging import getLogger
@@ -11,10 +10,8 @@ from fedimapper.models.instance import Instance
 
 from .services import db
 from .settings import settings
-from .tasks.ingest import ingest_host
-from .utils.queuerunner import QueueRunner
 
-NOT_MASTODON_STATUSES = ["unreachable", "unknown_service", "no_dns"]
+UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns"]
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +34,7 @@ async def get_stale(session, desired):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.stale_rescan_hours)
     select_stmt = (
         select(Instance)
-        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.not_in(NOT_MASTODON_STATUSES)))
+        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.not_in(UNREADABLE_STATUSES)))
         .order_by(Instance.last_ingest.asc())
         .limit(desired)
     )
@@ -48,7 +45,7 @@ async def get_unreachable(session, desired):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(days=settings.unreachable_rescan_hours)
     select_stmt = (
         select(Instance)
-        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(NOT_MASTODON_STATUSES)))
+        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(UNREADABLE_STATUSES)))
         .order_by(Instance.last_ingest.asc())
         .limit(desired)
     )
@@ -71,4 +68,4 @@ async def get_next_instance(desired: int = None) -> str:
 
     # Start with our bootstrap instances to ensure we have something to work with.
     if desired > 0:
-        logger.info("All instances have been crawled- nothing available.")
+        logger.debug("All instances have been crawled- nothing available.")
