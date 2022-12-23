@@ -38,6 +38,20 @@ def instance(host: str):
 
 
 @app.command()
+def instance_version(host: str):
+    metadata = mastodon.get_metadata(host)
+    if not metadata:
+        typer.echo("Unable to get metdata.")
+        sys.exit(1)
+
+    if not "version" in metadata:
+        typer.echo("Unable to get version string.")
+        sys.exit(1)
+
+    pretty_print(dict(mastodon.get_version_breakdown(metadata["version"])))
+
+
+@app.command()
 def instance_peers(host: str):
     pretty_print(mastodon.get_peers(host))
 
