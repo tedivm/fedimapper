@@ -1,0 +1,14 @@
+services:
+  www:
+    build:
+      dockerfile: ./dockerfile.www
+    volumes:
+      - "./fedimapper:/app/fedimapper"
+      - "./db:/app/db"
+      - "./docker/www/prestart.sh:/app/prestart.sh"
+      - "./test.db:/app/test.db"
+    ports:
+      - "8080:80"
+    environment:
+      DEBUG: true
+      RELOAD: true

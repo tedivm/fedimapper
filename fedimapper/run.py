@@ -9,9 +9,7 @@ from tld.utils import update_tld_names
 from fedimapper.models.instance import Instance
 
 from .services import db
-from .settings import settings
-
-UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns"]
+from .settings import UNREADABLE_STATUSES, settings
 
 logger = logging.getLogger(__name__)
 

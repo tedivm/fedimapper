@@ -1,0 +1,11 @@
+ARG PYTHON_VERSION=3.10
+FROM ghcr.io/multi-py/python-uvicorn:py${PYTHON_VERSION}-slim-LATEST
+
+ENV APP_MODULE=fedimapper.www:app
+
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
+RUN apt-get update && apt-get install -y netcat && rm -rf /var/lib/apt/lists/*
+
+COPY ./docker/www/prestart.sh /app/prestart.sh
+COPY ./ /app
