@@ -11,4 +11,18 @@ services:
       - "8080:80"
     environment:
       DEBUG: true
+      SQL_DEBUG: true
+      RELOAD: true
+
+  ingest:
+    build:
+      dockerfile: ./dockerfile.ingest
+    volumes:
+      - "./fedimapper:/app/fedimapper"
+      - "./db:/app/db"
+      - "./docker/ingest/prestart.sh:/app/prestart.sh"
+      - "./docker/ingest/start.sh:/app/start.sh"
+      - "./test.db:/app/test.db"
+    environment:
+      DEBUG: true
       RELOAD: true

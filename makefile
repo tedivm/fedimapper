@@ -123,7 +123,13 @@ requirements-dev.txt: $(PYTHON_DEPS) pyproject.toml
 # Data Dependencies
 #
 
-data/stop-words:
+.PHONY: build_data
+build_data: data/stop-words
+
+data:
+	mkdir data
+
+data/stop-words: data
 	git clone https://github.com/Alir3z4/stop-words data/stop-words
 
 #

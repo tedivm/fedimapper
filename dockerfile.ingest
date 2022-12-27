@@ -1,0 +1,15 @@
+ARG PYTHON_VERSION=3.10
+FROM python:${PYTHON_VERSION}-slim
+
+WORKDIR /app
+ENV NUM_PROCESSES=4
+
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt
+RUN pip install --no-cache-dir watchfiles
+
+COPY ./docker/ingest/prestart.sh /app/prestart.sh
+COPY ./docker/ingest/start.sh /app/start.sh
+COPY ./ /app
+
+CMD [ "/app/start.sh" ]

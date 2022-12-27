@@ -13,6 +13,7 @@ class Settings(queuerunner.Settings):
     stale_rescan_hours: float = 0.90
     unreachable_rescan_hours: float = 6
     debug: bool = False
+    sql_debug: bool = False
     evil_domains: List[str] = ["activitypub-troll.cf", "gab.best"]
     spam_domain_threshold: int = 100
     top_lists_min_threshold: int = 5

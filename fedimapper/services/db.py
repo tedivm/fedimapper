@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 from urllib.parse import urlparse
 
@@ -29,7 +30,7 @@ for find, replace in engine_mappings.items():
     db_url = db_url.replace(find, replace)
 
 
-engine = create_async_engine(db_url, future=True, echo=settings.debug, connect_args={"timeout": 20})
+engine = create_async_engine(db_url, future=True, echo=settings.sql_debug, connect_args={"timeout": 20})
 
 
 @asynccontextmanager
