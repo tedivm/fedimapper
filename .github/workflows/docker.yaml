@@ -46,7 +46,7 @@ jobs:
 
       - name: Get Python Version from File
         id: python_version
-        run: echo "version=$(cat VERSION)" >> $GITHUB_OUTPUT
+        run: echo "version=$(cat .python-version)" >> $GITHUB_OUTPUT
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
