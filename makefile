@@ -25,7 +25,7 @@ PACKAGE_CHECK:=$(PYTHON_PACKAGE_PATH)/piptools
 PYTHON_DEPS := $(PACKAGE_CHECK)
 
 .PHONY: all
-all: $(PACKAGE_CHECK)
+all: $(PACKAGE_CHECK) data/stop-words
 
 .PHONY: install
 install: $(PYTHON_PYENV) $(PYTHON_VENV) pip
@@ -119,6 +119,12 @@ requirements.txt: $(PYTHON_DEPS) pyproject.toml
 requirements-dev.txt: $(PYTHON_DEPS) pyproject.toml
 	$(PYTHON) -m piptools compile --upgrade --output-file=requirements-dev.txt --extra=dev pyproject.toml
 
+#
+# Data Dependencies
+#
+
+data/stop-words:
+	git clone https://github.com/Alir3z4/stop-words data/stop-words
 
 #
 # Packaging

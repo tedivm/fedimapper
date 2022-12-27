@@ -41,7 +41,7 @@ def instance(host: str):
 def instance_version(host: str):
     metadata = mastodon.get_metadata(host)
     if not metadata:
-        typer.echo("Unable to get metdata.")
+        typer.echo("Unable to get metadata.")
         sys.exit(1)
 
     if not "version" in metadata:
@@ -99,6 +99,13 @@ def vacuum_database():
     conn = sqlite3.connect(db_file, isolation_level=None)
     conn.execute("VACUUM")
     conn.close()
+
+
+@app.command()
+def word_test(language="english", message="The little brown dog did stuff."):
+    from fedimapper.services import stopwords
+
+    print(stopwords.get_key_words(language, message))
 
 
 if __name__ == "__main__":

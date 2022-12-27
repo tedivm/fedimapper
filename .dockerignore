@@ -13,3 +13,7 @@
 !/README.md
 !/setup.*
 !/requirements*
+!/data
+
+# Ensure no git repository metadata gets added from the exceptions.
+**/.git

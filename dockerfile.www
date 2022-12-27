@@ -9,3 +9,5 @@ RUN apt-get update && apt-get install -y netcat && rm -rf /var/lib/apt/lists/*
 
 COPY ./docker/www/prestart.sh /app/prestart.sh
 COPY ./ /app
+
+COPY ./data /app/data

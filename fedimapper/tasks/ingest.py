@@ -10,6 +10,8 @@ from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 from tld import get_tld
 
+from fedimapper.services.stopwords import get_key_words
+
 from ..models.asn import ASN
 from ..models.ban import Ban
 from ..models.evil import Evil
@@ -148,6 +150,9 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
                 "ingest_id": ingest_id,
                 "severity": banned_host["severity"],
                 "comment": banned_host["comment"],
+                # Servers in theory advertise a language, but they're mostly set to the default
+                # of english regardless of what language the users and admins actually use.
+                "keywords": list(get_key_words("en", banned_host["comment"])),
             }
             for banned_host in banned
             if banned_host and len([suffix for suffix in local_evils if banned_host["domain"].endswith(suffix)]) == 0
@@ -156,13 +161,19 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
             ban_insert_stmt = insert(Ban).values(ban_values)
             ban_update_statement = ban_insert_stmt.on_conflict_do_update(
                 index_elements=["host", "banned_host"],
-                set_=dict(severity=ban_insert_stmt.excluded.severity, comment=ban_insert_stmt.excluded.comment),
+                set_=dict(
+                    severity=ban_insert_stmt.excluded.severity,
+                    comment=ban_insert_stmt.excluded.comment,
+                    keywords=ban_insert_stmt.excluded.keywords,
+                    ingest_id=ban_insert_stmt.excluded.ingest_id,
+                ),
             )
             await session.execute(ban_update_statement)
 
         ban_delete_stmt = delete(Ban).where(and_(Ban.host == instance.host, Ban.ingest_id != ingest_id))
         await session.execute(ban_delete_stmt)
         await session.commit()
+
     except:
         instance.has_public_bans = False
         logger.debug(f"Unable to get instance ban data for {instance.host}")

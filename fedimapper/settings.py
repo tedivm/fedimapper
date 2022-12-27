@@ -9,11 +9,13 @@ from .utils import queuerunner
 class Settings(queuerunner.Settings):
     project_name: str = "fedimapper"
     database_url: str = "sqlite:///./test.db"
+    stop_words_directory: str = "./data/stop-words"
     stale_rescan_hours: float = 0.90
-    unreachable_rescan_hours: float = 24
+    unreachable_rescan_hours: float = 6
     debug: bool = False
     evil_domains: List[str] = ["activitypub-troll.cf", "gab.best"]
     spam_domain_threshold: int = 100
+    top_lists_min_threshold: int = 5
     bootstrap_instances: List = [
         # "Official" instance of the org that manages Mastodon.
         "mastodon.social",
