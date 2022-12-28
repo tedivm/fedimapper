@@ -29,9 +29,11 @@ def upgrade() -> None:
     op.add_column("instances", sa.Column("current_user_count", sa.Integer(), nullable=True))
     op.add_column("instances", sa.Column("current_status_count", sa.Integer(), nullable=True))
     op.add_column("instances", sa.Column("current_domain_count", sa.Integer(), nullable=True))
-    op.drop_column("instances", "domain_count")
-    op.drop_column("instances", "user_count")
-    op.drop_column("instances", "status_count")
+
+    with op.batch_alter_table("instances") as batch_op:
+        batch_op.drop_column("domain_count")
+        batch_op.drop_column("user_count")
+        batch_op.drop_column("status_count")
     # ### end Alembic commands ###
 
 
@@ -40,8 +42,11 @@ def downgrade() -> None:
     op.add_column("instances", sa.Column("status_count", sa.INTEGER(), nullable=True))
     op.add_column("instances", sa.Column("user_count", sa.INTEGER(), nullable=True))
     op.add_column("instances", sa.Column("domain_count", sa.INTEGER(), nullable=True))
-    op.drop_column("instances", "current_domain_count")
-    op.drop_column("instances", "current_status_count")
-    op.drop_column("instances", "current_user_count")
+
+    with op.batch_alter_table("instances") as batch_op:
+        batch_op.drop_column("current_domain_count")
+        batch_op.drop_column("current_status_count")
+        batch_op.drop_column("current_user_count")
+
     op.drop_table("instance_stats")
     # ### end Alembic commands ###
