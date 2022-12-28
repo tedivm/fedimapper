@@ -34,7 +34,7 @@ async def get_bans_ranked(db: AsyncSession = Depends(get_session_depends)) -> Ba
 
 
 @router.get("/bans/silenced", response_model=BanCountListResponse)
-async def get_bans_ranked(db: AsyncSession = Depends(get_session_depends)) -> BanCountListResponse:
+async def get_bans_silenced_ranked(db: AsyncSession = Depends(get_session_depends)) -> BanCountListResponse:
     banned_hosts_stmt = (
         select(
             Ban.banned_host,
@@ -53,7 +53,7 @@ async def get_bans_ranked(db: AsyncSession = Depends(get_session_depends)) -> Ba
 
 
 @router.get("/bans/suspended", response_model=BanCountListResponse)
-async def get_bans_ranked(db: AsyncSession = Depends(get_session_depends)) -> BanCountListResponse:
+async def get_bans_suspended_ranked(db: AsyncSession = Depends(get_session_depends)) -> BanCountListResponse:
     banned_hosts_stmt = (
         select(
             Ban.banned_host,
