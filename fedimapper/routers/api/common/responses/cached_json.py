@@ -16,9 +16,9 @@ class CachedJSONResponse(JSONResponse):
         headers: typing.Optional[typing.Dict[str, str]] = None,
         media_type: typing.Optional[str] = None,
         background: typing.Optional[BackgroundTask] = None,
-        expires_ttl: int = 15 * 60,
-        stale_while_revalidate_ttl: int | None = None,
-        stale_if_error_ttl: int | None = None,
+        expires_ttl: int = settings.api_cache_ttl,
+        stale_while_revalidate_ttl: int | None = settings.api_cache_while_revalidate_ttl,
+        stale_if_error_ttl: int | None = settings.api_cache_while_error_ttl,
     ) -> None:
         super().__init__(content, status_code, headers, media_type, background)
 

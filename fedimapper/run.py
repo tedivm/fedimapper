@@ -40,7 +40,7 @@ async def get_stale(session, desired):
 
 
 async def get_unreachable(session, desired):
-    stale_scan = datetime.datetime.utcnow() - datetime.timedelta(days=settings.unreachable_rescan_hours)
+    stale_scan = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.unreachable_rescan_hours)
     select_stmt = (
         select(Instance)
         .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(UNREADABLE_STATUSES)))

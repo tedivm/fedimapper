@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
+from . import VERSION
 from .routers.api.common.responses.cached_json import CachedJSONResponse
 from .routers.api.instances.routes import router as instance_router
 from .routers.api.reputation.routes import router as reputation_router
@@ -11,7 +12,15 @@ from .routers.api.software.routes import router as software_router
 
 static_file_path = os.path.dirname(os.path.realpath(__file__)) + "/static"
 
-app = FastAPI()
+description = """
+Fedimapper exposes a read only API that describes Fediverse Instances and how they relate to each other.
+"""
+
+app = FastAPI(
+    title="fedimapper",
+    version=VERSION,
+    description=description,
+)
 
 app.mount("/static", StaticFiles(directory=static_file_path), name="static")
 

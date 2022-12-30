@@ -12,6 +12,9 @@ class Settings(queuerunner.Settings):
     stop_words_directory: str = "./data/stop-words"
     stale_rescan_hours: float = 0.90
     unreachable_rescan_hours: float = 6
+    api_cache_ttl: int = 120
+    api_cache_while_revalidate_ttl: int = 3600
+    api_cache_while_error_ttl: int = 3600
     debug: bool = False
     sql_debug: bool = False
     evil_domains: List[str] = ["activitypub-troll.cf", "gab.best"]
