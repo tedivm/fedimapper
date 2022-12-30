@@ -16,9 +16,11 @@ def get_asn_data(ip) -> cymruwhois.asrecord:
     return client.lookup(ip)
 
 
-def can_access_https(host) -> bool:
+def can_access_https(host) -> bool | httpx.Response:
     try:
-        httpx.get(f"https://{host}")
+        response = httpx.get(f"https://{host}")
+        if response.status_code in [502, 503, 504, 404]:
+            return False
+        return response
     except httpx.TransportError as exc:
         return False
-    return True

@@ -7,7 +7,7 @@ from .utils import queuerunner
 
 
 class Settings(queuerunner.Settings):
-    project_name: str = "fedimapper"
+    project_name: str = "FediMapper"
     database_url: str = "sqlite:///./test.db"
     stop_words_directory: str = "./data/stop-words"
     stale_rescan_hours: float = 0.90
@@ -28,4 +28,4 @@ class Settings(queuerunner.Settings):
 
 settings = Settings()
 
-UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns"]
+UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns", "disabled"]

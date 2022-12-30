@@ -54,9 +54,17 @@ async def ingest_host(host: str) -> None:
             logger.debug(f"ASN Saved for {host}")
 
         # Add Reachability Check on port 443
-        if not networking.can_access_https(host):
+        index_response = networking.can_access_https(host)
+        if not index_response:
             instance.last_ingest_status = "unreachable"
             await session.commit()
+            logger.info(f"Unable to reach {host}")
+            return
+
+        if index_response == 530 or (index_response.text and "domain parking" in index_response.text.lower()):
+            instance.last_ingest_status = "disabled"
+            await session.commit()
+            logger.info(f"Host no longer has hosting {host}")
             return
 
         # Try Mastodon based APIs. There are a lot of non-mastodon services which
@@ -97,7 +105,7 @@ async def save_mastodon_metadata(session: Session, instance: Instance) -> bool:
         await session.commit()
         return False
     except:
-        logger.debug(f"Host is not Peertube Compatible: {instance.host}")
+        logger.debug(f"Host is not Mastodon Compatible: {instance.host}")
         return False
 
     instance.title = metadata.get("title", None)
