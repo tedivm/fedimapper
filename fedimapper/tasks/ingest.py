@@ -23,6 +23,17 @@ from ..settings import settings
 logger = getLogger(__name__)
 
 
+def get_safe_tld(domain: str):
+    res = get_tld(domain, as_object=True, fail_silently=True)
+    if not res:
+        # This occurs for gTLDs that aren't in our database.
+        domain_chunks = domain.split(".")
+        if len(domain_chunks) >= 2:
+            return f"{domain_chunks[-2]}.{domain_chunks[-1]}"
+        return domain
+    return res.fld
+
+
 async def ingest_host(host: str) -> None:
     logger.info(f"Ingesting from {host}")
 
@@ -40,6 +51,8 @@ async def ingest_host(host: str) -> None:
         # Now do database stuff.
         instance = await get_or_save_host(session, host)
         instance.last_ingest = datetime.datetime.utcnow()
+        instance.base_domain = get_safe_tld(host)
+        await session.commit()
         if not ip_address:
             logger.info(f"No DNS for {host}")
             instance.last_ingest_status = "no_dns"
@@ -283,11 +296,17 @@ async def save_peers(session: Session, host: str, peers: List[str]):
 
     if len(insert_peer_values) > 0:
         # Add Peers to Instances for future processing.
-        insert_instance_values = [{"host": peer_host["peer_host"]} for peer_host in insert_peer_values]
-        insert_instance_stmt = (
-            insert(Instance).values(insert_instance_values).on_conflict_do_nothing(index_elements=["host"])
+        insert_instance_values = [
+            {"host": peer_host["peer_host"], "base_domain": get_safe_tld(peer_host["peer_host"])}
+            for peer_host in insert_peer_values
+        ]
+        insert_instance_stmt = insert(Instance).values(insert_instance_values)
+        insert_instance_conflict_stmt = insert_instance_stmt.on_conflict_do_update(
+            index_elements=["host"],
+            set_=dict(base_domain=insert_instance_stmt.excluded.base_domain),
         )
-        await session.execute(insert_instance_stmt)
+
+        await session.execute(insert_instance_conflict_stmt)
         await session.commit()
 
         # Save Peer Relationship
@@ -329,11 +348,9 @@ async def save_asn(session: Session, asn: cymruwhois.asrecord) -> None:
 async def get_spammers_from_list(hosts: List[str]):
     domain_count = {}
     for host in hosts:
-        res = get_tld(host, as_object=True, fail_silently=True)
-        if not res:
-            continue
-        if not res.fld in domain_count:
-            domain_count[res.fld] = 1
+        fld = get_safe_tld(host)
+        if not fld in domain_count:
+            domain_count[fld] = 1
         else:
-            domain_count[res.fld] += 1
+            domain_count[fld] += 1
     return set([domain for domain, count in domain_count.items() if count >= settings.spam_domain_threshold])

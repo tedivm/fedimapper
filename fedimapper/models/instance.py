@@ -34,6 +34,7 @@ class Instance(Base):
 
     ip_address = Column(String, nullable=True)
     asn = Column(String, nullable=True)
+    base_domain = Column(String, index=True)
 
 
 Index("idx_instance_status_time", Instance.last_ingest_status, Instance.last_ingest)
