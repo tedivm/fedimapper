@@ -51,7 +51,8 @@ async def ingest_host(host: str) -> None:
 
         # Now do database stuff.
         instance = await get_or_save_host(session, host)
-        instance.digest = sha256string(host)
+        if not instance.digest:
+            instance.digest = sha256string(host)
         instance.last_ingest = datetime.datetime.utcnow()
         instance.base_domain = get_safe_tld(host)
         await session.commit()
@@ -302,7 +303,6 @@ async def save_peers(session: Session, host: str, peers: List[str]):
         insert_instance_values = [
             {
                 "host": peer_host["peer_host"],
-                "digest": sha256string(peer_host["peer_host"]),
                 "base_domain": get_safe_tld(peer_host["peer_host"]),
             }
             for peer_host in insert_peer_values
