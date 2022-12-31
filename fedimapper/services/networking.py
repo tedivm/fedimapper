@@ -20,7 +20,7 @@ def get_asn_data(ip) -> cymruwhois.asrecord:
 
 def can_access_https(host) -> bool | httpx.Response:
     try:
-        response = get(f"https://{host}")
+        response = httpx.get(f"https://{host}")
         if response.status_code in [502, 503, 504, 404]:
             return False
         return response
