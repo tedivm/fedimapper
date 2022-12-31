@@ -1,9 +1,10 @@
-from functools import cache
+from threading import Lock
 from typing import Any
 from urllib.parse import urlparse
 from urllib.robotparser import RobotFileParser
 
 import httpx
+from cachetools import TTLCache, cached
 
 from fedimapper.settings import settings
 
@@ -14,7 +15,7 @@ class RobotBlocked(Exception):
     pass
 
 
-@cache
+@cached(cache=TTLCache(maxsize=1024 * 1024 * settings.cache_size_robots, ttl=1800), lock=Lock())
 def get_robots(host) -> RobotFileParser:
     rp = RobotFileParser()
     rp.set_url(f"{host}/robots.txt")

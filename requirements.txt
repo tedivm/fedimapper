@@ -12,6 +12,8 @@ anyio==3.6.2
     # via
     #   httpcore
     #   starlette
+cachetools==5.2.0
+    # via fedimapper (pyproject.toml)
 certifi==2022.12.7
     # via
     #   httpcore
@@ -66,7 +68,9 @@ sqlalchemy==1.4.45
     #   alembic
     #   fedimapper (pyproject.toml)
 starlette==0.22.0
-    # via fastapi
+    # via
+    #   fastapi
+    #   fedimapper (pyproject.toml)
 tld==0.12.6
     # via fedimapper (pyproject.toml)
 typer==0.7.0
