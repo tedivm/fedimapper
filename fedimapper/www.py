@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from . import VERSION
 from .routers.api.common.responses.cached_json import CachedJSONResponse
 from .routers.api.instances.routes import router as instance_router
+from .routers.api.meta.routes import router as meta_router
 from .routers.api.reputation.routes import router as reputation_router
 from .routers.api.software.routes import router as software_router
 
@@ -33,6 +34,8 @@ app.include_router(
 app.include_router(
     reputation_router, prefix="/api/v1/reputation", tags=["reputation"], default_response_class=CachedJSONResponse
 )
+
+app.include_router(meta_router, prefix="/api/v1/meta", tags=["meta"])
 
 
 @app.get("/", include_in_schema=False)
