@@ -8,6 +8,7 @@ class Instance(Base):
     __tablename__ = "instances"
 
     host = Column(String, primary_key=True)
+    digest = Column(String, index=True)
     last_ingest = Column(DateTime, nullable=True)
     last_ingest_status = Column(String, nullable=True)
 

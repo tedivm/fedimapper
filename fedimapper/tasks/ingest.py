@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from tld import get_tld
 
 from fedimapper.services.stopwords import get_key_words
+from fedimapper.utils.hash import sha256string
 
 from ..models.asn import ASN
 from ..models.ban import Ban
@@ -50,6 +51,7 @@ async def ingest_host(host: str) -> None:
 
         # Now do database stuff.
         instance = await get_or_save_host(session, host)
+        instance.digest = sha256string(host)
         instance.last_ingest = datetime.datetime.utcnow()
         instance.base_domain = get_safe_tld(host)
         await session.commit()
@@ -168,6 +170,7 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
             {
                 "host": instance.host,
                 "banned_host": banned_host["domain"],
+                "digest": banned_host["digest"],
                 "ingest_id": ingest_id,
                 "severity": banned_host["severity"],
                 "comment": banned_host["comment"],
@@ -297,7 +300,11 @@ async def save_peers(session: Session, host: str, peers: List[str]):
     if len(insert_peer_values) > 0:
         # Add Peers to Instances for future processing.
         insert_instance_values = [
-            {"host": peer_host["peer_host"], "base_domain": get_safe_tld(peer_host["peer_host"])}
+            {
+                "host": peer_host["peer_host"],
+                "digest": sha256string(peer_host["peer_host"]),
+                "base_domain": get_safe_tld(peer_host["peer_host"]),
+            }
             for peer_host in insert_peer_values
         ]
         insert_instance_stmt = insert(Instance).values(insert_instance_values)
