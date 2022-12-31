@@ -44,16 +44,3 @@ def get_json(url: str) -> Any:
     r = httpx.get(url, headers=DEFAULT_HEADERS)
     r.raise_for_status()
     return r.json()
-
-
-if __name__ == "__main__":
-
-    print(parse_url("https://social.effy.space/api/v1/instance/domain_blocks"))
-
-    # robots = get_robots("https://social.effy.space/")
-    # print(robots.can_fetch("fedimapper", "https://social.effy.space/"))
-    # print(robots.can_fetch("fedimapper", "https://social.effy.space/api/v1/instance/domain_blocks"))
-
-    # robots = get_robots("https://social.effy.space/")
-    # print(robots.can_fetch("fedimapper", "https://social.effy.space/"))
-    # print(robots.can_fetch("fedimapper", "https://social.effy.space/api/v1/instance/domain_blocks"))
