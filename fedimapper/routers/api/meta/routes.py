@@ -31,14 +31,25 @@ async def get_meta(db: AsyncSession = Depends(get_session_depends)) -> MetaData:
     select_stmt = (
         select(Instance).where(and_(Instance.last_ingest != None)).order_by(Instance.last_ingest.desc()).limit(1)
     )
-
     try:
         last_ingest = (await db.execute(select_stmt)).first()[0].last_ingest
     except:
         last_ingest = None
 
+    seconds_to_scan = 60
+    sps_scan = datetime.datetime.utcnow() - datetime.timedelta(seconds=seconds_to_scan)
+    select_stmt = select(func.count("*").label("count")).where(
+        and_(Instance.last_ingest != None, Instance.last_ingest >= sps_scan)
+    )
+
+    try:
+        sps = (await db.execute(select_stmt)).first()[0] / seconds_to_scan
+    except:
+        sps = 0
+
     return MetaData(
         queue_lag_stale=queue_lag_stale,
         queue_lag_unreachable=queue_lag_unreachable,
         last_ingest=last_ingest,
+        sps=sps,
     )

@@ -8,3 +8,4 @@ class MetaData(ResponseBase):
     queue_lag_stale: int
     queue_lag_unreachable: int
     last_ingest: datetime | None = None
+    sps: float
