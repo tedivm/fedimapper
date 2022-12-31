@@ -57,7 +57,7 @@ async def get_next_instance(desired: int = None) -> str:
         for lookup in [get_unscanned, get_stale, get_unreachable]:
             results = await lookup(session, desired)
             for row in results:
-                desired += 1
+                desired -= 1
                 instance = row[0]
                 yield instance.host
             results.close()
