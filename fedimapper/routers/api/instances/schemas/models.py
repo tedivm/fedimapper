@@ -31,8 +31,10 @@ class InstanceResponse(ResponseBase):
 class InstanceBan(BaseModel):
     host: str
     banned_host: str
+    digest: str | None
     severity: str
     comment: str | None
+    keywords: List[str] | None
 
     class Config:
         orm_mode = True
