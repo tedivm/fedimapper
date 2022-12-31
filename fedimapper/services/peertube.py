@@ -1,33 +1,21 @@
-import re
-
-import httpx
+from .www import get_json
 
 
 def get_metadata(host):
-    r = httpx.get(f"https://{host}/api/v1/config")
-    r.raise_for_status()
-    return r.json()
+    return get_json(f"https://{host}/api/v1/config")
 
 
 def get_about(host):
-    r = httpx.get(f"https://{host}/api/v1/config/about")
-    r.raise_for_status()
-    return r.json()
+    return get_json(f"https://{host}/api/v1/config/about")
 
 
 def get_custom_settings(host):
-    r = httpx.get(f"https://{host}/api/v1/config/custom")
-    r.raise_for_status()
-    return r.json()
+    return get_json(f"https://{host}/api/v1/config/custom")
 
 
 def get_stats(host):
-    r = httpx.get(f"https://{host}/api/v1/server/stats")
-    r.raise_for_status()
-    return r.json()
+    return get_json(f"https://{host}/api/v1/server/stats")
 
 
 def get_peers(host):
-    r = httpx.get(f"https://{host}/api/v1/server/followers")
-    r.raise_for_status()
-    return r.json()
+    return get_json(f"https://{host}/api/v1/server/followers")

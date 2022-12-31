@@ -3,6 +3,8 @@ import socket
 import cymruwhois
 import httpx
 
+from .www import get
+
 
 def get_ip_from_url(url: str) -> str | bool:
     try:
@@ -18,7 +20,7 @@ def get_asn_data(ip) -> cymruwhois.asrecord:
 
 def can_access_https(host) -> bool | httpx.Response:
     try:
-        response = httpx.get(f"https://{host}")
+        response = get(f"https://{host}")
         if response.status_code in [502, 503, 504, 404]:
             return False
         return response
