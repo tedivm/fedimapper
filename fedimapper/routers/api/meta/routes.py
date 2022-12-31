@@ -16,17 +16,23 @@ router = APIRouter()
 @router.get("/", response_model=MetaData)
 async def get_meta(db: AsyncSession = Depends(get_session_depends)) -> MetaData:
 
-    queue_lag_stale = 0
-    oldest_stale = (await get_stale(db, 1)).first()[0]
-    if oldest_stale:
-        stale_window = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.stale_rescan_hours)
-        queue_lag_stale = (stale_window - oldest_stale.last_ingest).total_seconds()
+    try:
+        oldest_stale = (await get_stale(db, 1)).first()[0]
+        if oldest_stale:
+            stale_window = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.stale_rescan_hours)
+            queue_lag_stale = (stale_window - oldest_stale.last_ingest).total_seconds()
+    except:
+        queue_lag_stale = 0
 
-    queue_lag_unreachable = 0
-    oldest_unreachable = (await get_unreachable(db, 1)).first()[0]
-    if oldest_unreachable:
-        unreachable_window = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.unreachable_rescan_hours)
-        queue_lag_unreachable = (unreachable_window - oldest_unreachable.last_ingest).total_seconds()
+    try:
+        oldest_unreachable = (await get_unreachable(db, 1)).first()[0]
+        if oldest_unreachable:
+            unreachable_window = datetime.datetime.utcnow() - datetime.timedelta(
+                hours=settings.unreachable_rescan_hours
+            )
+            queue_lag_unreachable = (unreachable_window - oldest_unreachable.last_ingest).total_seconds()
+    except:
+        queue_lag_unreachable = 0
 
     select_stmt = (
         select(Instance).where(and_(Instance.last_ingest != None)).order_by(Instance.last_ingest.desc()).limit(1)
