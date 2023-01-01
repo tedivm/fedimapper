@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     queue_interaction_timeout: float = 0.01
     graceful_shutdown_timeout: float = 0.5
     lookup_block_size: int = 10
+    max_jobs_per_process: int | None = 200
 
 
 def get_named_settings(name):
@@ -169,6 +170,7 @@ class QueueRunner(object):
 
 def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
     PROCESS_NAME = mp.current_process().name
+    jobs_run = 0
     while not shutdown_event.is_set() and mp.parent_process().is_alive():
         try:
             id = queue.get(True, settings["queue_interaction_timeout"])
@@ -178,6 +180,12 @@ def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
                 asyncio.run(reader(id))
             else:
                 reader(id)
+
+            if settings.get("max_jobs_per_process", None):
+                jobs_run += 1
+                if jobs_run >= settings["max_jobs_per_process"]:
+                    logging.info(f"{PROCESS_NAME} has reached max_jobs_per_process, exiting.")
+                    return
 
         except Empty:
             logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
