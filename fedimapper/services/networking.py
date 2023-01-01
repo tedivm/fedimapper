@@ -1,9 +1,10 @@
 import socket
+from typing import Tuple
 
 import cymruwhois
 import httpx
 
-from .www import get
+from .www import get_safe
 
 
 def get_ip_from_url(url: str) -> str | bool:
@@ -18,11 +19,17 @@ def get_asn_data(ip) -> cymruwhois.asrecord:
     return client.lookup(ip)
 
 
-def can_access_https(host) -> bool | httpx.Response:
+def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
     try:
-        response = httpx.get(f"https://{host}")
-        if response.status_code in [502, 503, 504, 404]:
-            return False
-        return response
+        # Ignore Robots.txt on this call due to a chicken/egg problem- we need to know
+        # if the HTTPS service is accessible before we can pull files from it, and the
+        # robots.txt file can't be pulled without access to the service itself.
+        response, content = get_safe(f"https://{host}", validate_robots=False)
+
+        # Return "unreachable" for specific status codes.
+        if 500 <= response.status_code <= 520 or response.status_code == 404:
+            return False, None
+
+        return response, content.decode("utf-8")
     except httpx.TransportError as exc:
-        return False
+        return False, None

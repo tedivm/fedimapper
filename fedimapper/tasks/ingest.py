@@ -70,14 +70,14 @@ async def ingest_host(host: str) -> None:
             logger.debug(f"ASN Saved for {host}")
 
         # Add Reachability Check on port 443
-        index_response = networking.can_access_https(host)
+        index_response, index_contents = networking.can_access_https(host)
         if not index_response:
             instance.last_ingest_status = "unreachable"
             await session.commit()
             logger.info(f"Unable to reach {host}")
             return
 
-        if index_response == 530 or (index_response.text and "domain parking" in index_response.text.lower()):
+        if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):
             instance.last_ingest_status = "disabled"
             await session.commit()
             logger.info(f"Host no longer has hosting {host}")
