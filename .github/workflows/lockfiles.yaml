@@ -29,7 +29,7 @@ jobs:
         with:
           pip_extras: "dev"
           # This key will bypass workflow limitations to ensure tests are run.
-          # deploy_key: ${{ secrets.WRITEABLE_DEPLOY_KEY }}
+          deploy_key: ${{ secrets.WRITEABLE_DEPLOY_KEY }}
 
         env:
           # Needed to open pull request- automatically set for all actions.
