@@ -393,16 +393,30 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Di
         return False
 
     user_piece = nodeinfo_usage.get("users", {}).get("total", None)
+    user_count = None
     if user_piece:
         if isinstance(user_piece, dict):
-            instance.current_user_count = user_piece.get("total", None)
+            user_count = user_piece.get("total", None)
         else:
             try:
-                instance.current_user_count = int(user_piece)
+                user_count = int(user_piece)
             except:
-                instance.current_user_count = None
+                pass
 
-    instance.current_status_count = nodeinfo_usage.get("localPosts", None)
+    if user_count and user_count < 1250000:
+        instance.current_user_count = user_count
+    else:
+        instance.current_user_count = None
+
+    local_posts = nodeinfo_usage.get("localPosts", None)
+    if local_posts and local_posts < 1000000000:
+        instance.current_status_count = local_posts
+    else:
+        instance.current_status_count = None
+
+    active_monthly = nodeinfo_usage.get("users", {}).get("activeMonth", None)
+    if active_monthly and active_monthly > 1250000:
+        active_monthly = None
 
     node_meta = nodeinfo.get("meta", {})
     if "nodeName" in node_meta:
@@ -410,10 +424,10 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Di
 
     instance_stats = InstanceStats(
         host=instance.host,
-        user_count=instance.current_user_count,
-        active_monthly_users=nodeinfo_usage.get("users", {}).get("activeMonth", None),
+        user_count=user_count,
+        active_monthly_users=active_monthly,
         status_count=instance.current_status_count,
-        domain_count=instance.current_domain_count,
+        domain_count=None,
     )
     session.add(instance_stats)
     await session.commit()
