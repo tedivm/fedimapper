@@ -90,4 +90,5 @@ def get_safe(
 
 def get_json(url: str, max_size: int = DEFAULT_MAX_BYTES) -> Any:
     response, content = get_safe(url, max_size)
+    response.raise_for_status()
     return json.loads(content.decode("utf-8"), strict=False)
