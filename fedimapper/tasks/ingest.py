@@ -373,6 +373,8 @@ async def save_nodeinfo(session: Session, instance: Instance, nodeinfo: Dict[Any
     await session.commit()
 
     await save_nodeinfo_stats(session, instance, nodeinfo)
+    instance.last_ingest_status = "success"
+    await session.commit()
     return True
 
 
