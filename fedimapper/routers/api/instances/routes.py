@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import desc, func, select
 
 from fedimapper.models.ban import Ban
@@ -18,6 +18,8 @@ logger = getLogger(__name__)
 @router.get("/{host}", response_model=InstanceResponse)
 async def get_instance(host: str, db: AsyncSession = Depends(get_session_depends)) -> InstanceResponse:
     instance = await db.get(Instance, host)
+    if not instance:
+        raise HTTPException(404)
     return InstanceResponse.from_orm(instance)
 
 

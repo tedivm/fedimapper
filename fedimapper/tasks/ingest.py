@@ -388,6 +388,11 @@ async def save_nodeinfo(session: Session, instance: Instance, nodeinfo: Dict[Any
 
 async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
 
+    node_meta = nodeinfo.get("meta", {})
+    if "nodeName" in node_meta:
+        instance.title = node_meta["nodeName"]
+        await session.commit()
+
     nodeinfo_usage = nodeinfo.get("usage", None)
     if not nodeinfo_usage:
         return False
@@ -417,10 +422,6 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Di
     active_monthly = nodeinfo_usage.get("users", {}).get("activeMonth", None)
     if active_monthly and active_monthly > 1250000:
         active_monthly = None
-
-    node_meta = nodeinfo.get("meta", {})
-    if "nodeName" in node_meta:
-        instance.title = node_meta["nodeName"]
 
     instance_stats = InstanceStats(
         host=instance.host,
