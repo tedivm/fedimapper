@@ -296,7 +296,7 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
         logger.debug(f"Host is not Peertube Compatible: {instance.host}")
         return False
 
-    instance.software = "Peertube"
+    instance.software = "peertube"
 
     instance_config = metadata.get("instance", {})
     instance.title = instance_config.get("name", None)
@@ -364,7 +364,10 @@ async def save_nodeinfo(session: Session, instance: Instance, nodeinfo: Dict[Any
 
     logger.info(f"Host identified as nodeinfo compatible: {instance.host}")
 
-    instance.software = nodeinfo.get("software", {}).get("name", None)
+    software_name = nodeinfo.get("software", {}).get("name", None)
+    if software_name:
+        instance.software = software_name.lower()
+
     instance.software_version = nodeinfo.get("software", {}).get("version", None)
     instance.version = nodeinfo.get("software", {}).get("version", None)
     await session.commit()

@@ -35,7 +35,7 @@ def owncast_mapper(version: str) -> FediVersion | None:
         return
 
     fediversion = FediVersion()
-    fediversion.software = "Owncast"
+    fediversion.software = "owncast"
     fediversion.software_version = version_result.group(1)
     return fediversion
 
@@ -67,7 +67,7 @@ def hometown_mapper(version: str) -> FediVersion | None:
 
 
 VERSION_MAPPER = {
-    "Owncast": owncast_mapper,
+    "owncast": owncast_mapper,
     "takahe": takahe_mapper,
     "glitch": glitch_mapper,
     "hometown": hometown_mapper,
@@ -77,7 +77,7 @@ VERSION_MAPPER = {
 def get_version_breakdown(version: str) -> FediVersion | None:
 
     for search_string, mapper_function in VERSION_MAPPER.items():
-        if search_string in version:
+        if search_string.lower() in version:
             return mapper_function(version)
     return last_resort_version_breakdown(version)
 
@@ -96,7 +96,7 @@ def last_resort_version_breakdown(version: str) -> FediVersion | None:
         big_regex = r"^(\d+\.\d+.\d+\S*) \(compatible; (\w+) (\d+\.\d+\.*\d*\S*)\)"
         subversion_result = re.search(big_regex, version)
         if subversion_result:
-            fediversion.software = subversion_result.group(2)
+            fediversion.software = subversion_result.group(2).lower()
             fediversion.software_version = subversion_result.group(3)
         else:
             fediversion.software = "unknown"
