@@ -18,11 +18,11 @@ jobs:
 
       - name: Get Python Version from File
         id: python_version
-        run: echo "version=$(cat .python-version)" >> $GITHUB_OUTPUT
+        run: echo "python_version=$(cat .python-version)" >> $GITHUB_OUTPUT
 
       - uses: actions/setup-python@v3
         with:
-          python-version: ${{ steps.python_version.outputs.version }}
+          python-version: ${{ env.python_version }}
 
       - name: "Update Lockfiles and Open PR"
         uses: tedivm/action-python-lockfile-update@v1
