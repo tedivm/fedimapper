@@ -102,16 +102,12 @@ async def ingest_host(host: str) -> None:
             # Process with service specific function.
             processor = await get_processor(nodeinfo)
             if await processor(session, instance, nodeinfo):
-                instance.last_ingest_status = "success"
-                await session.commit()
-                logger.info(f"Successfully processed {instance.host}")
+                await mark_success(session, instance)
                 return True
 
             # Save whatever nodeinfo we have.
             if nodeinfo and await save_nodeinfo(session, instance, nodeinfo):
-                instance.last_ingest_status = "success"
-                await session.commit()
-                logger.info(f"Successfully processed {instance.host}")
+                await mark_success(session, instance)
                 return True
 
             instance.last_ingest_status = "unknown_service"
@@ -120,6 +116,15 @@ async def ingest_host(host: str) -> None:
     except:
         logger.exception(f"Unhandled error while processing host {host}.")
         raise
+
+
+async def mark_success(session: Session, instance: Instance):
+    instance.last_ingest_status = "success"
+    instance.last_ingest_success = datetime.datetime.utcnow()
+    if not instance.first_ingest_success:
+        instance.first_ingest_success = instance.last_ingest_success
+    await session.commit()
+    logger.info(f"Successfully processed {instance.host}")
 
 
 #
