@@ -8,7 +8,7 @@ from ruamel.yaml import YAML
 from tld.utils import update_tld_names
 
 from .run import get_next_instance
-from .services import mastodon
+from .services import mastodon, nodeinfo
 from .settings import settings
 from .tasks import ingest
 from .tasks.ingest import ingest_host
@@ -30,6 +30,12 @@ def syncify(f):
         return asyncio.run(f(*args, **kwargs))
 
     return wrapper
+
+
+@app.command()
+@syncify
+async def instance_nodeinfo(host: str):
+    pretty_print(await nodeinfo.get_nodeinfo(host))
 
 
 @app.command()

@@ -30,6 +30,9 @@ def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
         if 500 <= response.status_code <= 520 or response.status_code == 404:
             return False, None
 
-        return response, content.decode("utf-8")
+        if content and len(content) > 0:
+            return response, content.decode("utf-8")
+        return response, ""
+
     except httpx.TransportError as exc:
         return False, None

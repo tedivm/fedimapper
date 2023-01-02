@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     empty_queue_sleep_time: float = 1.00
     full_queue_sleep_time: float = 5.00
     queue_interaction_timeout: float = 0.01
-    graceful_shutdown_timeout: float = 0.5
+    graceful_shutdown_timeout: float = 30
     lookup_block_size: int = 10
     max_jobs_per_process: int | None = 200
 
@@ -38,8 +38,10 @@ class QueueBuilder:
         self.settings = settings
         self.last_queued = {}
         self.writer = writer
+        self.closed = False
 
     async def populate(self, max=50):
+
         self.clean_history()
         successful_adds = 0
         count = min(int(self.settings.max_queue_size * 0.8) - self.queue.qsize(), max)
@@ -48,6 +50,13 @@ class QueueBuilder:
             logging.debug("Skipping queue population due to max queue size.")
             return False
         try:
+
+            # If the queue is closed tell the children processes to close.
+            if self.closed:
+                for i in range(0, blocksize):
+                    self.queue.put("close", True, self.settings.queue_interaction_timeout)
+                return False
+
             async for id in self.writer(desired=blocksize):
                 if id is None or id is False:
                     logging.debug(f"Returning False {id}")
@@ -82,7 +91,8 @@ class QueueBuilder:
         }
 
     def close(self):
-        pass
+        if self.closed:
+            return False
 
 
 class QueueRunner(object):
@@ -96,9 +106,8 @@ class QueueRunner(object):
     async def main(self):
         with mp.Manager() as manager:
             import_queue = manager.Queue(self.settings.max_queue_size)
-            shutdown_event = manager.Event()
             queue_builder = QueueBuilder(import_queue, self.settings, self.writer)
-            processes = []
+            shutdown_event = manager.Event()
 
             # Inline function to implicitly pass through shutdown_event.
             def shutdown(a=None, b=None):
@@ -130,6 +139,7 @@ class QueueRunner(object):
 
             # Now start actual script.
             try:
+                processes = []
                 while not shutdown_event.is_set():
 
                     # Prune dead processes
@@ -146,7 +156,7 @@ class QueueRunner(object):
                         logging.debug("Queue unable to populate: sleeping scheduler.")
                         time.sleep(self.settings.full_queue_sleep_time)
                     else:
-                        # SMall sleep between populate attempts to prevent CPU/database pegging.
+                        # Small sleep between populate attempts to prevent CPU/database pegging.
                         time.sleep(0.05)
             finally:
                 shutdown()

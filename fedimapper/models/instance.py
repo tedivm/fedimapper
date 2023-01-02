@@ -32,6 +32,7 @@ class Instance(Base):
     software = Column(String, nullable=True)
     mastodon_version = Column(String, nullable=True)
     software_version = Column(String, nullable=True)
+    nodeinfo_version = Column(String, nullable=True)
 
     ip_address = Column(String, nullable=True)
     asn = Column(String, nullable=True)
@@ -47,5 +48,6 @@ class InstanceStats(Base):
     host = Column(String, primary_key=True)
     ingest_time = Column(DateTime, primary_key=True, server_default=func.now())
     user_count = Column(Integer, nullable=True)
+    active_monthly_users = Column(Integer, nullable=True)
     status_count = Column(Integer, nullable=True)
     domain_count = Column(Integer, nullable=True)
