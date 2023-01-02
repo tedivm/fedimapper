@@ -404,6 +404,10 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Di
 
     instance.current_status_count = nodeinfo_usage.get("localPosts", None)
 
+    node_meta = nodeinfo.get("meta", {})
+    if "nodeName" in node_meta:
+        instance.title = node_meta["nodeName"]
+
     instance_stats = InstanceStats(
         host=instance.host,
         user_count=instance.current_user_count,
