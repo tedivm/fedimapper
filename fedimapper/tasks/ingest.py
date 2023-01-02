@@ -179,10 +179,15 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
         instance.registration_open = bool(reg_open)
     instance.approval_required = metadata.get("approval_required", None)
 
+    try:
+        active_monthly_users = nodeinfo_usage.get("users", {}).get("activeMonth", None)
+    except:
+        active_monthly_users = None
+
     instance_stats = InstanceStats(
         host=instance.host,
         user_count=instance.current_user_count,
-        active_monthly_users=nodeinfo_usage.get("users", {}).get("activeMonth", None),
+        active_monthly_users=active_monthly_users,
         status_count=instance.current_status_count,
         domain_count=instance.current_domain_count,
     )
