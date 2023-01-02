@@ -7,5 +7,6 @@ from fedimapper.routers.api.common.schemas.base import ResponseBase
 class MetaData(ResponseBase):
     queue_lag_stale: int
     queue_lag_unreachable: int
+    unscanned: int
     last_ingest: datetime | None = None
     sps: float
