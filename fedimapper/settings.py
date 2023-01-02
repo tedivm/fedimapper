@@ -21,6 +21,8 @@ class Settings(queuerunner.Settings):
     bootstrap_instances: List = [
         # "Official" instance of the org that manages Mastodon.
         "mastodon.social",
+        # Diaspora instance with public peers.
+        "diasp.org",
     ]
 
     api_cache_ttl: int = 120
