@@ -102,11 +102,15 @@ async def ingest_host(host: str) -> None:
             # Process with service specific function.
             processor = await get_processor(nodeinfo)
             if await processor(session, instance, nodeinfo):
+                instance.last_ingest_status = "success"
+                await session.commit()
                 logger.info(f"Successfully processed {instance.host}")
                 return True
 
             # Save whatever nodeinfo we have.
             if nodeinfo and await save_nodeinfo(session, instance, nodeinfo):
+                instance.last_ingest_status = "success"
+                await session.commit()
                 logger.info(f"Successfully processed {instance.host}")
                 return True
 
@@ -129,8 +133,6 @@ async def save_mastodon(session: Session, instance: Instance, nodeinfo: Dict[Any
     await save_mastodon_blocked_instances(session, instance)
     await save_mastodon_peered_instance(session, instance)
 
-    instance.last_ingest_status = "success"
-    await session.commit()
     return True
 
 
@@ -276,7 +278,6 @@ async def save_peertube(session: Session, instance: Instance, nodeinfo: Dict[Any
     logger.info(f"Host identified as peertube compatible: {instance.host}")
     await save_peertube_peered_instance(session, instance)
 
-    instance.last_ingest_status = "success"
     # PeerTube doesn't support public ban lists at all.
     instance.has_public_bans = False
     await session.commit()
@@ -370,11 +371,13 @@ async def save_nodeinfo(session: Session, instance: Instance, nodeinfo: Dict[Any
 
     instance.software_version = nodeinfo.get("software", {}).get("version", None)
     instance.version = nodeinfo.get("software", {}).get("version", None)
+
+    instance.has_public_bans = False
+    instance.has_public_peers = False
+
     await session.commit()
 
     await save_nodeinfo_stats(session, instance, nodeinfo)
-    instance.last_ingest_status = "success"
-    await session.commit()
     return True
 
 
