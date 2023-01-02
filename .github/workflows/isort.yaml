@@ -13,7 +13,7 @@ jobs:
         id: python_version
         run: echo "PYTHON_VERSION=$(cat .python-version)" >> $GITHUB_OUTPUT
 
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ steps.python_version.outputs.PYTHON_VERSION }}
 
