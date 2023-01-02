@@ -48,6 +48,11 @@ async def get_last_ingest(db: AsyncSession = Depends(get_session_depends)):
 
 
 async def get_unscanned_count(db: AsyncSession = Depends(get_session_depends)):
+    select_stmt = select(func.count("*").label("count")).select_from(Instance).where(Instance.last_ingest == None)
+    return (await db.execute(select_stmt)).first()[0]
+
+
+async def get_scanned_count(db: AsyncSession = Depends(get_session_depends)):
     select_stmt = select(func.count("*").label("count")).select_from(Instance).where(Instance.last_ingest != None)
     return (await db.execute(select_stmt)).first()[0]
 
@@ -71,6 +76,7 @@ async def get_meta(db: AsyncSession = Depends(get_session_depends)) -> MetaData:
         queue_lag_stale=await get_oldest_stale_lag(db),
         queue_lag_unreachable=await get_oldest_unreachable_lag(db),
         unscanned=await get_unscanned_count(db),
+        scanned=await get_scanned_count(db),
         last_ingest=await get_last_ingest(db),
         sps=await get_sps(db),
     )
