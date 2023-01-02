@@ -118,7 +118,7 @@ async def ingest_host(host: str) -> None:
             logger.info(f"Unable to process {host}")
             await session.commit()
     except:
-        logger.exception("Unhandled error while processing host {host}.")
+        logger.exception(f"Unhandled error while processing host {host}.")
         raise
 
 
