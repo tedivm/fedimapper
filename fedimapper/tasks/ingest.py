@@ -45,72 +45,77 @@ def get_safe_tld(domain: str):
 async def ingest_host(host: str) -> None:
     logger.info(f"Ingesting from {host}")
 
-    for suffix in settings.evil_domains:
-        if host.endswith(suffix):
-            logger.info(f"Skipping ingest from {host} for matching evil pattern: {suffix}")
-            return
+    try:
 
-    async with db.get_session() as session:
+        for suffix in settings.evil_domains:
+            if host.endswith(suffix):
+                logger.info(f"Skipping ingest from {host} for matching evil pattern: {suffix}")
+                return
 
-        # This lookup can be slow as it hits an API, so do it before
-        # there are any locks on the database.
-        ip_address = networking.get_ip_from_url(host)
+        async with db.get_session() as session:
 
-        # Now do database stuff.
-        instance = await get_or_save_host(session, host)
-        instance.last_ingest = datetime.datetime.utcnow()
-        if not instance.digest:
-            instance.digest = sha256string(host)
-        if not instance.base_domain:
-            instance.base_domain = get_safe_tld(host)
-        await session.commit()
+            # This lookup can be slow as it hits an API, so do it before
+            # there are any locks on the database.
+            ip_address = networking.get_ip_from_url(host)
 
-        if not ip_address:
-            logger.info(f"No DNS for {host}")
-            instance.last_ingest_status = "no_dns"
-            await session.commit()
-            return
-
-        instance.ip_address = ip_address
-        asn_info = networking.get_asn_data(ip_address)
-        if asn_info:
-            instance.asn = asn_info.asn
-            await save_asn(session, asn_info)
-            logger.debug(f"ASN Saved for {host}")
-
-        # Add Reachability Check on port 443
-        index_response, index_contents = networking.can_access_https(host)
-        if not index_response:
-            instance.last_ingest_status = "unreachable"
-            await session.commit()
-            logger.info(f"Unable to reach {host}")
-            return
-
-        if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):
-            instance.last_ingest_status = "disabled"
-            await session.commit()
-            logger.info(f"Host no longer has hosting {host}")
-            return
-
-        nodeinfo = await get_nodeinfo(host)
-        if nodeinfo:
-            instance.nodeinfo_version = nodeinfo.get("version", None)
+            # Now do database stuff.
+            instance = await get_or_save_host(session, host)
+            instance.last_ingest = datetime.datetime.utcnow()
+            if not instance.digest:
+                instance.digest = sha256string(host)
+            if not instance.base_domain:
+                instance.base_domain = get_safe_tld(host)
             await session.commit()
 
-        # Process with service specific function.
-        processor = await get_processor(nodeinfo)
-        if await processor(session, instance, nodeinfo):
-            logger.info(f"Successfully processed {instance.host}")
-            return True
+            if not ip_address:
+                logger.info(f"No DNS for {host}")
+                instance.last_ingest_status = "no_dns"
+                await session.commit()
+                return
 
-        # Save whatever nodeinfo we have.
-        if nodeinfo and await save_nodeinfo(session, instance, nodeinfo):
-            logger.info(f"Successfully processed {instance.host}")
-            return True
+            instance.ip_address = ip_address
+            asn_info = networking.get_asn_data(ip_address)
+            if asn_info:
+                instance.asn = asn_info.asn
+                await save_asn(session, asn_info)
+                logger.debug(f"ASN Saved for {host}")
 
-        instance.last_ingest_status = "unknown_service"
-        logger.info(f"Unable to process {host}")
-        await session.commit()
+            # Add Reachability Check on port 443
+            index_response, index_contents = networking.can_access_https(host)
+            if not index_response:
+                instance.last_ingest_status = "unreachable"
+                await session.commit()
+                logger.info(f"Unable to reach {host}")
+                return
+
+            if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):
+                instance.last_ingest_status = "disabled"
+                await session.commit()
+                logger.info(f"Host no longer has hosting {host}")
+                return
+
+            nodeinfo = await get_nodeinfo(host)
+            if nodeinfo:
+                instance.nodeinfo_version = nodeinfo.get("version", None)
+                await session.commit()
+
+            # Process with service specific function.
+            processor = await get_processor(nodeinfo)
+            if await processor(session, instance, nodeinfo):
+                logger.info(f"Successfully processed {instance.host}")
+                return True
+
+            # Save whatever nodeinfo we have.
+            if nodeinfo and await save_nodeinfo(session, instance, nodeinfo):
+                logger.info(f"Successfully processed {instance.host}")
+                return True
+
+            instance.last_ingest_status = "unknown_service"
+            logger.info(f"Unable to process {host}")
+            await session.commit()
+    except:
+        logger.exception("Unhandled error while processing host {host}.")
+        raise
 
 
 #
