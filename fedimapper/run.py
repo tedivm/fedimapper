@@ -2,7 +2,7 @@ import datetime
 import logging
 from logging import getLogger
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.sqlite import insert
 from tld.utils import update_tld_names
 
@@ -43,7 +43,12 @@ async def get_unreachable(session, desired):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.unreachable_rescan_hours)
     select_stmt = (
         select(Instance)
-        .where(and_(Instance.last_ingest < stale_scan, Instance.last_ingest_status.in_(UNREADABLE_STATUSES)))
+        .where(
+            and_(
+                Instance.last_ingest < stale_scan,
+                or_(Instance.last_ingest_status.in_(UNREADABLE_STATUSES), Instance.last_ingest_status == None),
+            )
+        )
         .order_by(Instance.last_ingest.asc())
         .limit(desired)
     )
