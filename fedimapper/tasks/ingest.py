@@ -46,9 +46,8 @@ async def ingest_host(host: str) -> None:
             if not instance.digest:
                 instance.digest = sha256string(host)
 
-            # if not instance.base_domain:
-            #     instance.base_domain = utils.get_safe_fld(host)
-            instance.base_domain = utils.get_safe_fld(host)
+            if not instance.base_domain:
+                instance.base_domain = utils.get_safe_fld(host)
 
             await session.commit()
 
