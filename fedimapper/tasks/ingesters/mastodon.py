@@ -131,8 +131,8 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
                     ingest_id=ban_insert_stmt.excluded.ingest_id,
                 ),
             )
-            sorted_ban_values = ban_values.sort("banned_host")
-            await db.buffer_inserts(session, ban_update_statement, sorted_ban_values)
+            ban_values.sort(key=lambda x: x["banned_host"])
+            await db.buffer_inserts(session, ban_update_statement, ban_values)
 
         ban_delete_stmt = delete(Ban).where(and_(Ban.host == instance.host, Ban.ingest_id != ingest_id))
         await session.execute(ban_delete_stmt)
