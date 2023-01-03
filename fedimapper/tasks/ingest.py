@@ -32,7 +32,7 @@ async def ingest_host(host: str) -> None:
         for suffix in settings.evil_domains:
             if host.endswith(suffix):
                 logger.info(f"Skipping ingest from {host} for matching evil pattern: {suffix}")
-                return
+                return False
 
         async with db.get_session() as session:
 
@@ -53,7 +53,7 @@ async def ingest_host(host: str) -> None:
                 logger.info(f"No DNS for {host}")
                 instance.last_ingest_status = "no_dns"
                 await session.commit()
-                return
+                return False
 
             instance.ip_address = ip_address
             asn_info = networking.get_asn_data(ip_address)
@@ -68,13 +68,13 @@ async def ingest_host(host: str) -> None:
                 instance.last_ingest_status = "unreachable"
                 await session.commit()
                 logger.info(f"Unable to reach {host}")
-                return
+                return False
 
             if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):
                 instance.last_ingest_status = "disabled"
                 await session.commit()
                 logger.info(f"Host no longer has hosting {host}")
-                return
+                return False
 
             nodeinfo = await get_nodeinfo(host)
             if nodeinfo:
@@ -95,6 +95,7 @@ async def ingest_host(host: str) -> None:
             instance.last_ingest_status = "unknown_service"
             logger.info(f"Unable to process {host}")
             await session.commit()
+            return True
     except:
         logger.exception(f"Unhandled error while processing host {host}.")
         raise

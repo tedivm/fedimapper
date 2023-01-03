@@ -4,7 +4,7 @@ from typing import Tuple
 import cymruwhois
 import httpx
 
-from .www import get_safe
+from .www import SafetyException, get_safe
 
 
 def get_ip_from_url(url: str) -> str | bool:
@@ -24,7 +24,7 @@ def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
         # Ignore Robots.txt on this call due to a chicken/egg problem- we need to know
         # if the HTTPS service is accessible before we can pull files from it, and the
         # robots.txt file can't be pulled without access to the service itself.
-        response, content = get_safe(f"https://{host}", validate_robots=False)
+        response, content = get_safe(f"https://{host}", validate_robots=False, timeout=1.0)
 
         # Return "unreachable" for specific status codes.
         if 500 <= response.status_code <= 520 or response.status_code == 404:
@@ -34,5 +34,5 @@ def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
             return response, content.decode("utf-8")
         return response, ""
 
-    except httpx.TransportError as exc:
+    except (httpx.TransportError, SafetyException) as exc:
         return False, None

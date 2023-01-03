@@ -22,11 +22,15 @@ class RobotBlocked(Exception):
     pass
 
 
-class ExcessivelyLargeRequest(Exception):
+class SafetyException(Exception):
     pass
 
 
-class ExcessivelySlowRequest(Exception):
+class ExcessivelyLargeRequest(SafetyException):
+    pass
+
+
+class ExcessivelySlowRequest(SafetyException):
     pass
 
 
@@ -61,7 +65,7 @@ def get(url: str) -> httpx.Response:
 def get_safe(
     url: str,
     max_size: int = DEFAULT_MAX_BYTES,
-    timeout: int = DEFAULT_MAX_REQUEST_TIME,
+    timeout: float = DEFAULT_MAX_REQUEST_TIME,
     validate_robots: bool = True,
     follow_redirects: bool = False,
 ) -> Tuple[httpx.Response, bytes]:
@@ -70,7 +74,7 @@ def get_safe(
         raise RobotBlocked(f"blocked by robots.txt from crawling {url}")
 
     start = datetime.datetime.utcnow()
-    with client.stream("GET", url, headers=DEFAULT_HEADERS, follow_redirects=follow_redirects) as r:
+    with client.stream("GET", url, headers=DEFAULT_HEADERS, follow_redirects=follow_redirects, timeout=timeout) as r:
         if int(r.headers.get("Content-Length", 0)) > max_size:
             return None
 

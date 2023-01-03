@@ -82,7 +82,7 @@ async def ingest_instance(host: str):
 @app.command()
 @syncify
 async def crawl(
-    num_processes: int = typer.Option(None, help="Last name of person to greet."),
+    num_processes: int = typer.Option(None),
 ):
     typer.echo("Update TLD database.")
     update_tld_names()
@@ -92,6 +92,29 @@ async def crawl(
 
     runner = QueueRunner("ingest", reader=ingest_host, writer=get_next_instance, settings=queue_settings)
     await runner.main()
+
+
+@app.command()
+@syncify
+async def profile_ingest(num_instances: int = typer.Option(5), sort_by: str = typer.Option("tottime")):
+    import cProfile
+
+    typer.echo("Update TLD database.")
+    update_tld_names()
+    typer.echo("Run queue processing.")
+
+    pr = cProfile.Profile()
+    pr.enable()
+    successes = 0
+    numbers = 0
+    while successes <= num_instances:
+        async for instance in get_next_instance(1):
+            numbers += 1
+            print(f"Run {numbers}")
+            if await ingest_host(instance):
+                successes += 1
+    pr.disable()
+    pr.print_stats(sort=sort_by)
 
 
 @app.command()
