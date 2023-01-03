@@ -1,10 +1,9 @@
 import datetime
 import logging
-from logging import getLogger
+from typing import AsyncIterator
 
 from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.sqlite import insert
-from tld.utils import update_tld_names
 
 from fedimapper.models.instance import Instance
 
@@ -23,12 +22,12 @@ async def bootstrap(session):
     await session.commit()
 
 
-async def get_unscanned(session, desired):
+async def get_unscanned(session, desired: int):
     select_stmt = select(Instance).where(Instance.last_ingest == None).limit(desired)
     return await session.execute(select_stmt)
 
 
-async def get_stale(session, desired):
+async def get_stale(session, desired: int):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.stale_rescan_hours)
     select_stmt = (
         select(Instance)
@@ -39,7 +38,7 @@ async def get_stale(session, desired):
     return await session.execute(select_stmt)
 
 
-async def get_unreachable(session, desired):
+async def get_unreachable(session, desired: int):
     stale_scan = datetime.datetime.utcnow() - datetime.timedelta(hours=settings.unreachable_rescan_hours)
     select_stmt = (
         select(Instance)
@@ -55,7 +54,7 @@ async def get_unreachable(session, desired):
     return await session.execute(select_stmt)
 
 
-async def get_next_instance(desired: int = None) -> str:
+async def get_next_instance(desired: int = 1) -> AsyncIterator[str]:
 
     async with db.get_session() as session:
         await bootstrap(session)

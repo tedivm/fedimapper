@@ -95,7 +95,9 @@ async def save_peertube_peered_instance(session: Session, instance: Instance) ->
         await session.commit()
         peers = set([x["follower"]["host"] for x in peers_full.get("data", [])])
         await utils.save_peers(session, instance.host, peers)
+        return True
     except:
         instance.has_public_peers = False
         await session.commit()
         logger.exception(f"Unable to get instance peer data for {instance.host}")
+        return False

@@ -30,7 +30,7 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
     return True
 
 
-async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Dict[Any, Any]) -> bool:
 
     node_meta = nodeinfo.get("meta", {})
     if "nodeName" in node_meta:

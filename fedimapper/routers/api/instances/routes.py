@@ -34,9 +34,7 @@ async def get_instance_banned_from(
 
 
 @router.get("/{host}/bans", response_model=InstanceBanListResponse)
-async def get_instance_banned_from(
-    host: str, db: AsyncSession = Depends(get_session_depends)
-) -> InstanceBanListResponse:
+async def get_instance_bans(host: str, db: AsyncSession = Depends(get_session_depends)) -> InstanceBanListResponse:
     banned_hosts_stmt = select(Ban).where(Ban.host == host)
     banned_hosts_rows = (await db.execute(banned_hosts_stmt)).all()
     bans = [InstanceBan.from_orm(row[0]) for row in banned_hosts_rows]

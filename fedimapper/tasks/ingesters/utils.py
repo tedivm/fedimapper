@@ -1,25 +1,16 @@
-import datetime
 from logging import getLogger
-from typing import Any, Callable, Dict, List
-from uuid import UUID, uuid4
+from typing import List, Set
+from uuid import uuid4
 
-import cymruwhois
-import httpx
 from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
 from tld import get_tld
 
-from fedimapper.models.asn import ASN
-from fedimapper.models.ban import Ban
 from fedimapper.models.evil import Evil
-from fedimapper.models.instance import Instance, InstanceStats
+from fedimapper.models.instance import Instance
 from fedimapper.models.peer import Peer
-from fedimapper.services import db, mastodon, networking, peertube
-from fedimapper.services.nodeinfo import get_nodeinfo
-from fedimapper.services.stopwords import get_key_words
 from fedimapper.settings import settings
-from fedimapper.utils.hash import sha256string
 
 logger = getLogger(__name__)
 
@@ -32,7 +23,7 @@ def get_safe_fld(domain: str):
 
     # get_tld is expensive because of the large TLD database.
     res = get_tld(domain, as_object=True, fail_silently=True, fix_protocol=True)
-    if res:
+    if res and not isinstance(res, str):
         return res.fld
 
     # This occurs for gTLDs that aren't in our database.
@@ -41,7 +32,7 @@ def get_safe_fld(domain: str):
     return domain
 
 
-async def get_spammers_from_list(hosts: List[str]):
+async def get_spammers_from_list(hosts: List[str] | Set[str]):
     domain_count = {}
     for host in hosts:
         fld = get_safe_fld(host)
@@ -52,7 +43,7 @@ async def get_spammers_from_list(hosts: List[str]):
     return set([domain for domain, count in domain_count.items() if count >= settings.spam_domain_threshold])
 
 
-async def save_evil_domains(session: Session, domains: List[str]):
+async def save_evil_domains(session: Session, domains: List[str] | Set[str]):
     if len(domains) <= 0:
         return
     evil_values = [{"domain": x} for x in domains]
@@ -62,7 +53,7 @@ async def save_evil_domains(session: Session, domains: List[str]):
     await session.commit()
 
 
-async def save_peers(session: Session, host: str, peers: List[str]):
+async def save_peers(session: Session, host: str, peers: List[str] | Set[str]):
     ingest_id = str(uuid4())
     local_evils = set(settings.evil_domains) | await get_spammers_from_list(peers)
     insert_peer_values = [

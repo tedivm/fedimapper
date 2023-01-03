@@ -1,10 +1,10 @@
 import ipaddress
-from typing import Any, Dict
+from typing import Any, Dict, Set
 
 from .www import get_json
 
 
-def get_peers(host: str) -> Dict[Any, Any] | bool:
+def get_peers(host: str) -> Set[str] | bool:
 
     try:
         peers = get_json(f"https://{host}/pods.json")

@@ -5,7 +5,7 @@ import multiprocessing as mp
 import signal
 import time
 from queue import Empty, Full
-from typing import Any, Callable, Dict
+from typing import Callable
 
 import psutil
 from pydantic import BaseSettings
@@ -96,7 +96,7 @@ class QueueBuilder:
 
 
 class QueueRunner(object):
-    def __init__(self, name: str, reader: Callable, writer: Callable, settings: Dict[str, Any] | None = None, **kwargs):
+    def __init__(self, name: str, reader: Callable, writer: Callable, settings: Settings | None = None, **kwargs):
         self.name = name
         self.settings = settings if settings else get_named_settings(name)
         self.reader = reader
@@ -181,7 +181,12 @@ class QueueRunner(object):
 def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
     PROCESS_NAME = mp.current_process().name
     jobs_run = 0
-    while not shutdown_event.is_set() and mp.parent_process().is_alive():
+
+    parent_process = mp.parent_process()
+    if not parent_process:
+        raise ValueError("Function should be called as a child process.")
+
+    while not shutdown_event.is_set() and parent_process.is_alive():
         try:
             id = queue.get(True, settings["queue_interaction_timeout"])
             if id == "close":

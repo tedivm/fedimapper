@@ -6,7 +6,6 @@ import httpx
 from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import Session
-from tld import get_tld
 
 from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance, InstanceStats

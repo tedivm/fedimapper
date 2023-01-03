@@ -23,16 +23,12 @@ class FediVersion(BaseModel):
     software_version: str | None = None
 
 
-def compatible_mapper(version: str) -> FediVersion | None:
-    return None
-
-
-def owncast_mapper(version: str) -> FediVersion | None:
-
+def owncast_mapper(version: str) -> FediVersion:
+    fediversion = FediVersion()
     version_regex = r"^Owncast v(\d+\.\d+\.\d+-?\w*)"
     version_result = re.search(version_regex, version)
     if not version_result:
-        return
+        return fediversion
 
     fediversion = FediVersion()
     fediversion.software = "owncast"
@@ -40,29 +36,30 @@ def owncast_mapper(version: str) -> FediVersion | None:
     return fediversion
 
 
-def takahe_mapper(version: str) -> FediVersion | None:
-
-    if not version.startswith("takahe"):
-        return
-
+def takahe_mapper(version: str) -> FediVersion:
     fediversion = FediVersion()
+    if not version.startswith("takahe"):
+        return fediversion
+
     fediversion.software = "takahe"
     fediversion.mastodon_version = None
     fediversion.software_version = version.split("/")[1]
     return fediversion
 
 
-def glitch_mapper(version: str) -> FediVersion | None:
+def glitch_mapper(version: str) -> FediVersion:
     fediversion = last_resort_version_breakdown(version)
     fediversion.software = "glitch"
     return fediversion
 
 
-def hometown_mapper(version: str) -> FediVersion | None:
+def hometown_mapper(version: str) -> FediVersion:
     fediversion = last_resort_version_breakdown(version)
     fediversion.software = "hometown"
-    fediversion.software_version = fediversion.software_version.split("-")[1]
-    fediversion.mastodon_version = fediversion.mastodon_version.split("+")[0]
+    if fediversion.software_version:
+        fediversion.software_version = fediversion.software_version.split("-")[1]
+    if fediversion.mastodon_version:
+        fediversion.mastodon_version = fediversion.mastodon_version.split("+")[0]
     return fediversion
 
 
@@ -74,7 +71,7 @@ VERSION_MAPPER = {
 }
 
 
-def get_version_breakdown(version: str) -> FediVersion | None:
+def get_version_breakdown(version: str) -> FediVersion:
 
     for search_string, mapper_function in VERSION_MAPPER.items():
         if search_string.lower() in version:
@@ -82,13 +79,13 @@ def get_version_breakdown(version: str) -> FediVersion | None:
     return last_resort_version_breakdown(version)
 
 
-def last_resort_version_breakdown(version: str) -> FediVersion | None:
+def last_resort_version_breakdown(version: str) -> FediVersion:
     fediversion = FediVersion()
 
     version_regex = r"^(\d+\.\d+.\d+\S*)"
     version_result = re.search(version_regex, version)
     if not version_result:
-        return
+        return fediversion
 
     fediversion.mastodon_version = version_result.group(1)
 

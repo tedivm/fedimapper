@@ -1,7 +1,4 @@
-import os
 from typing import List
-
-from pydantic import BaseSettings
 
 from .utils import queuerunner
 

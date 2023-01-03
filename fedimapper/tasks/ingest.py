@@ -1,6 +1,6 @@
 import datetime
 from logging import getLogger
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, cast
 
 import cymruwhois
 from sqlalchemy.dialects.sqlite import insert
@@ -24,7 +24,7 @@ PROCESSORS = {
 }
 
 
-async def ingest_host(host: str) -> None:
+async def ingest_host(host: str) -> bool:
     logger.info(f"Ingesting from {host}")
 
     try:
@@ -72,7 +72,7 @@ async def ingest_host(host: str) -> None:
                 logger.info(f"Unable to reach {host}")
                 return False
 
-            if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):
+            if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):  # type: ignore
                 instance.last_ingest_status = "disabled"
                 await session.commit()
                 logger.info(f"Host no longer has hosting {host}")
@@ -80,7 +80,7 @@ async def ingest_host(host: str) -> None:
 
             nodeinfo = await get_nodeinfo(host)
             if nodeinfo:
-                instance.nodeinfo_version = nodeinfo.get("version", None)
+                instance.nodeinfo_version = cast(Dict[Any, Any], nodeinfo).get("version", None)
                 await session.commit()
 
             # Process with service specific function.

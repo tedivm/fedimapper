@@ -7,13 +7,13 @@ import typer
 from ruamel.yaml import YAML
 from tld.utils import update_tld_names
 
-from .run import get_next_instance
-from .services import mastodon, nodeinfo
-from .settings import settings
-from .tasks import ingest
-from .tasks.ingest import ingest_host
-from .utils.queuerunner import QueueRunner
-from .utils.queuerunner import Settings as QueueSettings
+from fedimapper.run import get_next_instance
+from fedimapper.services import mastodon, nodeinfo
+from fedimapper.settings import settings
+from fedimapper.tasks import ingest
+from fedimapper.tasks.ingest import ingest_host
+from fedimapper.utils.queuerunner import QueueRunner
+from fedimapper.utils.queuerunner import Settings as QueueSettings
 
 yaml = YAML()
 yaml.indent(mapping=2, sequence=4, offset=2)
@@ -60,11 +60,6 @@ def instance_version(host: str):
 @app.command()
 def instance_peers(host: str):
     pretty_print(mastodon.get_peers(host))
-
-
-@app.command()
-def instance_blocks(host: str):
-    pretty_print(mastodon.get_blocked_instances(host))
 
 
 @app.command()

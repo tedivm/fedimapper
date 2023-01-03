@@ -18,7 +18,7 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
 
     logger.info(f"Host identified as diaspora compatible: {instance.host}")
     peers = diaspora.get_peers(instance.host)
-    if peers:
+    if peers and isinstance(peers, set):
         await utils.save_peers(session, instance.host, peers)
 
     return True

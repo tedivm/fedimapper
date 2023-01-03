@@ -18,11 +18,15 @@ DEFAULT_MAX_REQUEST_TIME = 10
 client = httpx.Client(headers=DEFAULT_HEADERS)
 
 
-class RobotBlocked(Exception):
+class WWWException(Exception):
     pass
 
 
-class SafetyException(Exception):
+class RobotBlocked(WWWException):
+    pass
+
+
+class SafetyException(WWWException):
     pass
 
 
@@ -34,15 +38,20 @@ class ExcessivelySlowRequest(SafetyException):
     pass
 
 
+class NoContent(WWWException):
+    pass
+
+
 @cached(cache=TTLCache(maxsize=1024 * 1024 * settings.cache_size_robots, ttl=1800), lock=Lock())
 def get_robots(host) -> RobotFileParser:
     rp = RobotFileParser()
     response, contents = get_safe(f"{host}/robots.txt", validate_robots=False)
     if response.status_code in (401, 403):
-        rp.disallow_all = True
+        rp.disallow_all = True  # type: ignore
     elif response.status_code >= 400 and response.status_code < 500:
-        rp.allow_all = True
-    rp.parse(contents.decode("utf-8").splitlines())
+        rp.allow_all = True  # type: ignore
+    if contents:
+        rp.parse(contents.decode("utf-8").splitlines())
     return rp
 
 
@@ -68,7 +77,7 @@ def get_safe(
     timeout: float = DEFAULT_MAX_REQUEST_TIME,
     validate_robots: bool = True,
     follow_redirects: bool = False,
-) -> Tuple[httpx.Response, bytes]:
+) -> Tuple[httpx.Response, bytes | None]:
 
     if validate_robots and not can_crawl(url):
         raise RobotBlocked(f"blocked by robots.txt from crawling {url}")
@@ -76,7 +85,7 @@ def get_safe(
     start = datetime.datetime.utcnow()
     with client.stream("GET", url, headers=DEFAULT_HEADERS, follow_redirects=follow_redirects, timeout=timeout) as r:
         if int(r.headers.get("Content-Length", 0)) > max_size:
-            return None
+            return r, None
 
         data = []
         length = 0
@@ -95,4 +104,6 @@ def get_safe(
 def get_json(url: str, max_size: int = DEFAULT_MAX_BYTES) -> Any:
     response, content = get_safe(url, max_size)
     response.raise_for_status()
+    if not content:
+        raise NoContent(f"No content body for {url}")
     return json.loads(content.decode("utf-8"), strict=False)
