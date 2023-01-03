@@ -68,6 +68,7 @@ async def save_peers(session: Session, host: str, peers: List[str] | Set[str]):
 
     if len(insert_peer_values) > 0:
         # Add Peers to Instances for future processing.
+        # This also has to have before the peer relationship itself due to foreign keys.
         insert_instance_values = [
             {
                 "host": peer_host["peer_host"],

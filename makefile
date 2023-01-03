@@ -113,10 +113,10 @@ rebuild_dependencies:
 .PHONY: dependencies
 dependencies: requirements.txt requirements-dev.txt
 
-requirements.txt: $(PYTHON_DEPS) pyproject.toml
+requirements.txt: $(PYTHON_DEPS) pyproject.toml setup.cfg
 	$(PYTHON) -m piptools compile --upgrade --output-file=requirements.txt pyproject.toml
 
-requirements-dev.txt: $(PYTHON_DEPS) pyproject.toml
+requirements-dev.txt: $(PYTHON_DEPS) pyproject.toml setup.cfg
 	$(PYTHON) -m piptools compile --upgrade --output-file=requirements-dev.txt --extra=dev pyproject.toml
 
 #

@@ -10,9 +10,12 @@ services:
     ports:
       - "8080:80"
     environment:
+      DATABASE_URL: 'postgresql+psycopg2://user:asdfghjkl123@db/main'
       DEBUG: true
       SQL_DEBUG: true
       RELOAD: true
+    depends_on:
+      - db
 
   ingest:
     build:
@@ -24,5 +27,16 @@ services:
       - "./docker/ingest/start.sh:/app/start.sh"
       - "./test.db:/app/test.db"
     environment:
+      DATABASE_URL: 'postgresql+psycopg2://user:asdfghjkl123@db/main'
       DEBUG: true
       RELOAD: true
+    depends_on:
+      - db
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: asdfghjkl123
+      POSTGRES_USER: user
+      POSTGRES_DB: main

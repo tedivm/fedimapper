@@ -100,8 +100,9 @@ async def ingest_host(host: str) -> bool:
             return True
     except:
         logger.exception(f"Unhandled error while processing host {host}.")
-        instance.last_ingest_status = "crawl_error"
-        await session.commit()
+        if instance:
+            instance.last_ingest_status = "crawl_error"
+            await session.commit()
         raise
 
 

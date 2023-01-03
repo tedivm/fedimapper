@@ -11,8 +11,8 @@ class Instance(Base):
     digest = Column(String, index=True)
     last_ingest = Column(DateTime, nullable=True)
     last_ingest_status = Column(String, nullable=True)
-    last_ingest_success = Column(String, nullable=True)
-    first_ingest_success = Column(String, nullable=True)
+    last_ingest_success = Column(DateTime, nullable=True)
+    first_ingest_success = Column(DateTime, nullable=True)
 
     title = Column(String, nullable=True)
     short_description = Column(String, nullable=True)
