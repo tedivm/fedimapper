@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance, InstanceStats
-from fedimapper.services import mastodon
+from fedimapper.services import db, mastodon
 from fedimapper.services.stopwords import get_key_words
 from fedimapper.settings import settings
 from fedimapper.tasks.ingesters import utils
@@ -119,8 +119,9 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
             for banned_host in banned
             if banned_host and len([suffix for suffix in local_evils if banned_host["domain"].endswith(suffix)]) == 0
         ]
+
         if len(ban_values) > 0:
-            ban_insert_stmt = insert(Ban).values(ban_values)
+            ban_insert_stmt = insert(Ban)
             ban_update_statement = ban_insert_stmt.on_conflict_do_update(
                 index_elements=["host", "banned_host"],
                 set_=dict(
@@ -130,7 +131,8 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
                     ingest_id=ban_insert_stmt.excluded.ingest_id,
                 ),
             )
-            await session.execute(ban_update_statement)
+            sorted_ban_values = ban_values.sort("banned_host")
+            await db.buffer_inserts(session, ban_update_statement, sorted_ban_values)
 
         ban_delete_stmt = delete(Ban).where(and_(Ban.host == instance.host, Ban.ingest_id != ingest_id))
         await session.execute(ban_delete_stmt)

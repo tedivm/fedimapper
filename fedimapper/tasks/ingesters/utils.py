@@ -10,6 +10,7 @@ from tld import get_tld
 from fedimapper.models.evil import Evil
 from fedimapper.models.instance import Instance
 from fedimapper.models.peer import Peer
+from fedimapper.services.db import DB_MODE, DB_MODE_SQLITE, buffer_inserts
 from fedimapper.settings import settings
 
 logger = getLogger(__name__)
@@ -53,16 +54,18 @@ async def save_evil_domains(session: Session, domains: List[str] | Set[str]):
     await session.commit()
 
 
-async def save_peers(session: Session, host: str, peers: List[str] | Set[str]):
+async def save_peers(session: Session, host: str, peers: Set[str]):
+
+    sorted_peers: List[str] = sorted(peers)
     ingest_id = str(uuid4())
-    local_evils = set(settings.evil_domains) | await get_spammers_from_list(peers)
+    local_evils = set(settings.evil_domains) | await get_spammers_from_list(sorted_peers)
     insert_peer_values = [
         {
             "host": host,
             "peer_host": peer_host,
             "ingest_id": ingest_id,
         }
-        for peer_host in peers
+        for peer_host in sorted_peers
         if peer_host and len([suffix for suffix in local_evils if peer_host.endswith(suffix)]) == 0
     ]
 
@@ -76,20 +79,16 @@ async def save_peers(session: Session, host: str, peers: List[str] | Set[str]):
             }
             for peer_host in insert_peer_values
         ]
-        insert_instance_stmt = insert(Instance).values(insert_instance_values)
+
+        insert_instance_stmt = insert(Instance)
         insert_instance_conflict_stmt = insert_instance_stmt.on_conflict_do_update(
             index_elements=["host"],
             set_=dict(base_domain=insert_instance_stmt.excluded.base_domain),
         )
+        await buffer_inserts(session, insert_instance_conflict_stmt, insert_instance_values)
 
-        await session.execute(insert_instance_conflict_stmt)
-        await session.commit()
-
-        # Save Peer Relationship
-        insert_peer_stmt = (
-            insert(Peer).values(insert_peer_values).on_conflict_do_nothing(index_elements=["host", "peer_host"])
-        )
-        await session.execute(insert_peer_stmt)
+        insert_peer_stmt = insert(Peer).on_conflict_do_nothing(index_elements=["host", "peer_host"])
+        await buffer_inserts(session, insert_peer_stmt, insert_peer_values)
 
     # Delete old relationships that weren't in this ingest.
     peer_delete_stmt = delete(Peer).where(and_(Peer.host == host, Peer.ingest_id != ingest_id))

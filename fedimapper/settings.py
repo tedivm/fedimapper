@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Set
 
 from .utils import queuerunner
 
@@ -12,7 +12,8 @@ class Settings(queuerunner.Settings):
     sql_debug: bool = False
 
     stop_words_directory: str = "./data/stop-words"
-    crawler_user_agent = "fedimapper"
+    crawler_user_agent: str = "fedimapper"
+    bulk_insert_buffer: int = 1000
 
     evil_domains: List[str] = ["activitypub-troll.cf", "gab.best"]
     bootstrap_instances: List = [
