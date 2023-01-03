@@ -1,5 +1,7 @@
+import datetime
+
 from fastapi import APIRouter, Depends
-from sqlalchemy import desc, func, select
+from sqlalchemy import and_, desc, func, select
 
 from fedimapper.models.instance import Instance
 from fedimapper.services.db import AsyncSession, get_session_depends
@@ -12,13 +14,14 @@ router = APIRouter()
 
 @router.get("/", response_model=SoftwareList)
 async def get_software_stats(db: AsyncSession = Depends(get_session_depends)) -> SoftwareList:
+    active_window = datetime.datetime.utcnow() - datetime.timedelta(days=1)
     known_software_stmt = (
         select(
             Instance.software,
             func.count(Instance.software).label("installs"),
             func.sum(Instance.current_user_count).label("users"),
         )
-        .where(Instance.last_ingest_status.not_in(UNREADABLE_STATUSES))
+        .where(Instance.last_ingest_success >= active_window)
         .group_by(Instance.software)
         .order_by(desc("installs"))
     )
@@ -29,7 +32,7 @@ async def get_software_stats(db: AsyncSession = Depends(get_session_depends)) ->
     unknown_service_stmt = select(
         func.count().label("installs"),
         func.sum(Instance.current_user_count).label("users"),
-    ).where(Instance.last_ingest_status == "unknown_service")
+    ).where(and_(Instance.last_ingest_status == "unknown_service", Instance.last_ingest >= active_window))
 
     unknown_rows = [x for x in await db.execute(unknown_service_stmt)]
     software["unknown"] = SoftwareStats(installs=unknown_rows[0].installs, users=None)
