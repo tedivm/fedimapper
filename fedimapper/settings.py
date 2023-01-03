@@ -39,4 +39,4 @@ class Settings(queuerunner.Settings):
 
 settings = Settings()
 
-UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns", "disabled"]
+UNREADABLE_STATUSES = ["unreachable", "unknown_service", "no_dns", "disabled", "crawl_error"]
