@@ -24,7 +24,7 @@ from fedimapper.utils.hash import sha256string
 logger = getLogger(__name__)
 
 
-def get_safe_tld(domain: str):
+def get_safe_fld(domain: str):
     # If there are only two parts it has to be a full domain already.
     domain_chunks = domain.split(".")
     if len(domain_chunks) == 2:
@@ -44,7 +44,7 @@ def get_safe_tld(domain: str):
 async def get_spammers_from_list(hosts: List[str]):
     domain_count = {}
     for host in hosts:
-        fld = get_safe_tld(host)
+        fld = get_safe_fld(host)
         if not fld in domain_count:
             domain_count[fld] = 1
         else:
@@ -80,7 +80,7 @@ async def save_peers(session: Session, host: str, peers: List[str]):
         insert_instance_values = [
             {
                 "host": peer_host["peer_host"],
-                "base_domain": get_safe_tld(peer_host["peer_host"]),
+                "base_domain": get_safe_fld(peer_host["peer_host"]),
             }
             for peer_host in insert_peer_values
         ]
