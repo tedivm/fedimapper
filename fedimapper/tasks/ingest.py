@@ -45,8 +45,11 @@ async def ingest_host(host: str) -> None:
             instance.last_ingest = datetime.datetime.utcnow()
             if not instance.digest:
                 instance.digest = sha256string(host)
-            if not instance.base_domain:
-                instance.base_domain = utils.get_safe_tld(host)
+
+            # if not instance.base_domain:
+            #     instance.base_domain = utils.get_safe_tld(host)
+            instance.base_domain = utils.get_safe_tld(host)
+
             await session.commit()
 
             if not ip_address:

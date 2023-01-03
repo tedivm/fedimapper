@@ -31,7 +31,7 @@ def get_safe_tld(domain: str):
         return f"{domain_chunks[0]}.{domain_chunks[1]}"
 
     # get_tld is expensive because of the large TLD database.
-    res = get_tld(domain, as_object=True, fail_silently=True)
+    res = get_tld(domain, as_object=True, fail_silently=True, fix_protocol=True)
     if res:
         return res.fld
 
