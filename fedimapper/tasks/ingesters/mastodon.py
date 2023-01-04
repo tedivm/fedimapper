@@ -1,3 +1,4 @@
+import datetime
 from logging import getLogger
 from typing import Any, Dict
 from uuid import uuid4
@@ -23,7 +24,12 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
 
     logger.info(f"Host identified as mastodon compatible: {instance.host}")
     await save_mastodon_blocked_instances(session, instance)
-    await save_mastodon_peered_instance(session, instance)
+
+    if (
+        not instance.last_ingest_peers
+        or (datetime.datetime.utcnow() - instance.last_ingest_peers).total_seconds > 3600 * 12
+    ):
+        await save_mastodon_peered_instance(session, instance)
 
     return True
 
@@ -148,6 +154,7 @@ async def save_mastodon_peered_instance(session: Session, instance: Instance):
         # Will throw exceptions when the peer list isn't public.
         peers = mastodon.get_peers(instance.host)
         instance.has_public_peers = True
+        instance.last_ingest_peers = datetime.datetime.utcnow()
         await session.commit()
         await utils.save_peers(session, instance.host, peers)
     except:

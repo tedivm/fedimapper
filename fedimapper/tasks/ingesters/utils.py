@@ -81,10 +81,7 @@ async def save_peers(session: Session, host: str, peers: Set[str]):
         ]
 
         insert_instance_stmt = insert(Instance)
-        insert_instance_conflict_stmt = insert_instance_stmt.on_conflict_do_update(
-            index_elements=["host"],
-            set_=dict(base_domain=insert_instance_stmt.excluded.base_domain),
-        )
+        insert_instance_conflict_stmt = insert_instance_stmt.on_conflict_do_nothing(index_elements=["host"])
         await buffer_inserts(session, insert_instance_conflict_stmt, insert_instance_values)
 
         insert_peer_stmt = insert(Peer).on_conflict_do_nothing(index_elements=["host", "peer_host"])
