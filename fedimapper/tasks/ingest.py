@@ -4,6 +4,7 @@ from typing import Any, Callable, Dict, cast
 
 import cymruwhois
 from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from fedimapper.models.asn import ASN
@@ -24,7 +25,7 @@ PROCESSORS = {
 }
 
 
-async def ingest_host(host: str) -> bool:
+async def ingest_host(session: AsyncSession, host: str) -> bool:
     logger.info(f"Ingesting from {host}")
 
     try:
@@ -34,70 +35,68 @@ async def ingest_host(host: str) -> bool:
                 logger.info(f"Skipping ingest from {host} for matching evil pattern: {suffix}")
                 return False
 
-        async with db.get_session() as session:
+        # This lookup can be slow as it hits an API, so do it before
+        # there are any locks on the database.
+        ip_address = networking.get_ip_from_url(host)
 
-            # This lookup can be slow as it hits an API, so do it before
-            # there are any locks on the database.
-            ip_address = networking.get_ip_from_url(host)
+        # Now do database stuff.
+        instance = await get_or_save_host(session, host)
+        instance.last_ingest = datetime.datetime.utcnow()
+        if not instance.digest:
+            instance.digest = sha256string(host)
 
-            # Now do database stuff.
-            instance = await get_or_save_host(session, host)
-            instance.last_ingest = datetime.datetime.utcnow()
-            if not instance.digest:
-                instance.digest = sha256string(host)
+        if not instance.base_domain:
+            instance.base_domain = utils.get_safe_fld(host)
 
-            if not instance.base_domain:
-                instance.base_domain = utils.get_safe_fld(host)
+        await session.commit()
 
+        if not ip_address:
+            logger.info(f"No DNS for {host}")
+            instance.last_ingest_status = "no_dns"
+            await session.commit()
+            return False
+
+        instance.ip_address = ip_address
+        asn_info = networking.get_asn_data(ip_address)
+        if asn_info:
+            instance.asn = asn_info.asn
+            await save_asn(session, asn_info)
+            logger.debug(f"ASN Saved for {host}")
+
+        # Add Reachability Check on port 443
+        index_response, index_contents = networking.can_access_https(host)
+        if not index_response:
+            instance.last_ingest_status = "unreachable"
+            await session.commit()
+            logger.info(f"Unable to reach {host}")
+            return False
+
+        if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):  # type: ignore
+            instance.last_ingest_status = "disabled"
+            await session.commit()
+            logger.info(f"Host no longer has hosting {host}")
+            return False
+
+        nodeinfo = await get_nodeinfo(host)
+        if nodeinfo:
+            instance.nodeinfo_version = cast(Dict[Any, Any], nodeinfo).get("version", None)
             await session.commit()
 
-            if not ip_address:
-                logger.info(f"No DNS for {host}")
-                instance.last_ingest_status = "no_dns"
-                await session.commit()
-                return False
-
-            instance.ip_address = ip_address
-            asn_info = networking.get_asn_data(ip_address)
-            if asn_info:
-                instance.asn = asn_info.asn
-                await save_asn(session, asn_info)
-                logger.debug(f"ASN Saved for {host}")
-
-            # Add Reachability Check on port 443
-            index_response, index_contents = networking.can_access_https(host)
-            if not index_response:
-                instance.last_ingest_status = "unreachable"
-                await session.commit()
-                logger.info(f"Unable to reach {host}")
-                return False
-
-            if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):  # type: ignore
-                instance.last_ingest_status = "disabled"
-                await session.commit()
-                logger.info(f"Host no longer has hosting {host}")
-                return False
-
-            nodeinfo = await get_nodeinfo(host)
-            if nodeinfo:
-                instance.nodeinfo_version = cast(Dict[Any, Any], nodeinfo).get("version", None)
-                await session.commit()
-
-            # Process with service specific function.
-            processor = await get_processor(nodeinfo)
-            if await processor(session, instance, nodeinfo):
-                await mark_success(session, instance)
-                return True
-
-            # Save whatever nodeinfo we have.
-            if nodeinfo and await PROCESSORS["nodeinfo"](session, instance, nodeinfo):
-                await mark_success(session, instance)
-                return True
-
-            instance.last_ingest_status = "unknown_service"
-            logger.info(f"Unable to process {host}")
-            await session.commit()
+        # Process with service specific function.
+        processor = await get_processor(nodeinfo)
+        if await processor(session, instance, nodeinfo):
+            await mark_success(session, instance)
             return True
+
+        # Save whatever nodeinfo we have.
+        if nodeinfo and await PROCESSORS["nodeinfo"](session, instance, nodeinfo):
+            await mark_success(session, instance)
+            return True
+
+        instance.last_ingest_status = "unknown_service"
+        logger.info(f"Unable to process {host}")
+        await session.commit()
+        return True
     except:
         logger.exception(f"Unhandled error while processing host {host}.")
         if instance:

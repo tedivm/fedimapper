@@ -43,13 +43,20 @@ class QueueBuilder:
     async def populate(self, max=50):
 
         self.clean_history()
-        successful_adds = 0
-        count = min(int(self.settings.max_queue_size * 0.8) - self.queue.qsize(), max)
+
+        # Writers can be expensive but cheaper when pulling bulk records.
+        queue_size = self.queue.qsize()
+        if queue_size >= self.settings.max_queue_size * 0.3:
+            return True
+
+        # Don't try to fill the queue 100% since the queue size isn't always accurate.
+        count = min(int(self.settings.max_queue_size * 0.8) - queue_size, max)
         blocksize = min(self.settings.lookup_block_size, count)
         if count <= 0:
             logging.debug("Skipping queue population due to max queue size.")
             return False
         try:
+            successful_adds = 0
 
             # If the queue is closed tell the children processes to close.
             if self.closed:
@@ -179,6 +186,10 @@ class QueueRunner(object):
 
 
 def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
+    asyncio.run(reader_runner(queue, shutdown_event, reader, settings))
+
+
+async def reader_runner(queue, shutdown_event, reader: Callable, settings: dict):
     PROCESS_NAME = mp.current_process().name
     jobs_run = 0
 
@@ -186,23 +197,27 @@ def reader_process(queue, shutdown_event, reader: Callable, settings: dict):
     if not parent_process:
         raise ValueError("Function should be called as a child process.")
 
-    while not shutdown_event.is_set() and parent_process.is_alive():
-        try:
-            id = queue.get(True, settings["queue_interaction_timeout"])
-            if id == "close":
-                break
-            if inspect.iscoroutinefunction(reader):
-                asyncio.run(reader(id))
-            else:
-                reader(id)
+    from fedimapper.services import db
 
-            if settings.get("max_jobs_per_process", None):
-                jobs_run += 1
-                if jobs_run >= settings["max_jobs_per_process"]:
-                    logging.info(f"{PROCESS_NAME} has reached max_jobs_per_process, exiting.")
-                    return
+    async with db.get_session() as session:
 
-        except Empty:
-            logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
-            time.sleep(settings["empty_queue_sleep_time"])
-            continue
+        while not shutdown_event.is_set() and parent_process.is_alive():
+            try:
+                id = queue.get(True, settings["queue_interaction_timeout"])
+                if id == "close":
+                    break
+                if inspect.iscoroutinefunction(reader):
+                    await reader(session, id)
+                else:
+                    reader(session, id)
+
+                if settings.get("max_jobs_per_process", None):
+                    jobs_run += 1
+                    if jobs_run >= settings["max_jobs_per_process"]:
+                        logging.info(f"{PROCESS_NAME} has reached max_jobs_per_process, exiting.")
+                        return
+
+            except Empty:
+                logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
+                time.sleep(settings["empty_queue_sleep_time"])
+                continue

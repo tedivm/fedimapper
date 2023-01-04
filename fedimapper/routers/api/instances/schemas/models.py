@@ -8,8 +8,8 @@ from fedimapper.routers.api.common.schemas.base import ResponseBase
 
 class InstanceResponse(ResponseBase):
     host: str
-    last_ingest: datetime
-    last_ingest_status: str
+    last_ingest: datetime | None
+    last_ingest_status: str | None
 
     title: str | None
     short_description: str | None

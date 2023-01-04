@@ -39,13 +39,17 @@ DB_MODE_OTHER = "OTHER"
 
 if "sqlite" in db_url:
     DB_MODE = DB_MODE_SQLITE
+    CONNECT_ARGS = {"timeout": 20}
 elif "postgresql" in db_url:
     DB_MODE = DB_MODE_POSTGRES
+    # Drop statement cache size for pgbouncer compatibility.
+    CONNECT_ARGS = {"statement_cache_size": 0}
 else:
     DB_MODE = DB_MODE_OTHER
+    CONNECT_ARGS = {}
 
 engine = create_async_engine(
-    db_url, future=True, echo=settings.sql_debug, connect_args={"timeout": 20}, poolclass=NullPool
+    db_url, future=True, echo=settings.sql_debug, connect_args=CONNECT_ARGS, poolclass=NullPool
 )
 
 

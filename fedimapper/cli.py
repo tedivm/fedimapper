@@ -70,8 +70,11 @@ def instance_blocks(host: str):
 @app.command()
 @syncify
 async def ingest_instance(host: str):
-    await ingest.ingest_host(host)
-    typer.echo("Ingest complete.")
+    from fedimapper.services import db
+
+    async with db.get_session() as session:
+        await ingest.ingest_host(session, host)
+        typer.echo("Ingest complete.")
 
 
 @app.command()
@@ -98,18 +101,21 @@ async def profile_ingest(num_instances: int = typer.Option(5), sort_by: str = ty
     update_tld_names()
     typer.echo("Run queue processing.")
 
-    pr = cProfile.Profile()
-    pr.enable()
-    successes = 0
-    numbers = 0
-    while successes <= num_instances:
-        async for instance in get_next_instance(1):
-            numbers += 1
-            print(f"Run {numbers}")
-            if await ingest_host(instance):
-                successes += 1
-    pr.disable()
-    pr.print_stats(sort=sort_by)
+    from fedimapper.services import db
+
+    async with db.get_session() as session:
+        pr = cProfile.Profile()
+        pr.enable()
+        successes = 0
+        numbers = 0
+        while successes <= num_instances:
+            async for instance in get_next_instance(1):
+                numbers += 1
+                print(f"Run {numbers}")
+                if await ingest_host(session, instance):
+                    successes += 1
+        pr.disable()
+        pr.print_stats(sort=sort_by)
 
 
 @app.command()
