@@ -7,7 +7,7 @@ from sqlalchemy.dialects.sqlite import insert
 
 from fedimapper.models.instance import Instance
 
-from .services import db
+from .services import db, db_session
 from .settings import UNREADABLE_STATUSES, settings
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ async def get_unreachable(session, desired: int):
 
 async def get_next_instance(desired: int = 1) -> AsyncIterator[str]:
 
-    async with db.get_session() as session:
+    async with db_session.get_session() as session:
         await bootstrap(session)
         for lookup in [get_unscanned, get_stale, get_unreachable]:
             results = await lookup(session, desired)

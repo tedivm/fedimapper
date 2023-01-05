@@ -199,25 +199,26 @@ async def reader_runner(queue, shutdown_event, reader: Callable, settings: dict)
 
     from fedimapper.services import db
 
-    async with db.get_session() as session:
+    engine = db.get_engine()
 
-        while not shutdown_event.is_set() and parent_process.is_alive():
-            try:
-                id = queue.get(True, settings["queue_interaction_timeout"])
-                if id == "close":
-                    break
+    while not shutdown_event.is_set() and parent_process.is_alive():
+        try:
+            id = queue.get(True, settings["queue_interaction_timeout"])
+            if id == "close":
+                break
+            async with db.get_session_with_engine(engine) as session:
                 if inspect.iscoroutinefunction(reader):
                     await reader(session, id)
                 else:
                     reader(session, id)
 
-                if settings.get("max_jobs_per_process", None):
-                    jobs_run += 1
-                    if jobs_run >= settings["max_jobs_per_process"]:
-                        logging.info(f"{PROCESS_NAME} has reached max_jobs_per_process, exiting.")
-                        return
+            if settings.get("max_jobs_per_process", None):
+                jobs_run += 1
+                if jobs_run >= settings["max_jobs_per_process"]:
+                    logging.info(f"{PROCESS_NAME} has reached max_jobs_per_process, exiting.")
+                    return
 
-            except Empty:
-                logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
-                time.sleep(settings["empty_queue_sleep_time"])
-                continue
+        except Empty:
+            logging.debug(f"{PROCESS_NAME} has no jobs to process, sleeping.")
+            time.sleep(settings["empty_queue_sleep_time"])
+            continue

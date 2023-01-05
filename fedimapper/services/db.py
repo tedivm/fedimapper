@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import NullPool
 
@@ -48,22 +48,19 @@ else:
     DB_MODE = DB_MODE_OTHER
     CONNECT_ARGS = {}
 
-engine = create_async_engine(
-    db_url, future=True, echo=settings.sql_debug, connect_args=CONNECT_ARGS, poolclass=NullPool
-)
+
+def get_engine() -> AsyncEngine:
+    return create_async_engine(db_url, future=True, echo=settings.sql_debug, connect_args=CONNECT_ARGS)
 
 
 @asynccontextmanager
-async def get_session() -> AsyncSession:
+async def get_session_with_engine(engine: AsyncEngine) -> AsyncSession:
     async_session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
     async with async_session() as session:
         yield session
     await session.close()
 
 
-async def get_session_depends() -> AsyncSession:
-    async with get_session() as session:
-        yield session
 
 
 async def buffer_inserts(session: AsyncSession, stmt, values: List[Dict[Any, Any]]):

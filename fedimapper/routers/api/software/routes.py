@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import and_, desc, func, select
 
 from fedimapper.models.instance import Instance
-from fedimapper.services.db import AsyncSession, get_session_depends
+from fedimapper.services.db import AsyncSession
+from fedimapper.services.db_session import get_session_depends
 from fedimapper.settings import UNREADABLE_STATUSES
 
 from .schemas.models import SoftwareList, SoftwareStats
