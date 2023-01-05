@@ -99,8 +99,8 @@ async def should_save_peers(instance: Instance) -> bool:
     if not instance.last_ingest_peers:
         return True
 
-    peer_age = (datetime.datetime.utcnow() - instance.last_ingest_peers).total_seconds
-
+    peer_age = (datetime.datetime.utcnow() - instance.last_ingest_peers).total_seconds()
+    print(peer_age)
     # If older than X hours return True.
     if peer_age > 3600 * settings.refresh_peers_hours:
         return True
