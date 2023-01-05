@@ -1,3 +1,5 @@
+import datetime
+import random
 from logging import getLogger
 from typing import List, Set
 from uuid import uuid4
@@ -91,3 +93,21 @@ async def save_peers(session: Session, host: str, peers: Set[str]):
     peer_delete_stmt = delete(Peer).where(and_(Peer.host == host, Peer.ingest_id != ingest_id))
     await session.execute(peer_delete_stmt)
     await session.commit()
+
+
+async def should_save_peers(instance: Instance) -> bool:
+    if not instance.last_ingest_peers:
+        return True
+
+    peer_age = (datetime.datetime.utcnow() - instance.last_ingest_peers).total_seconds
+
+    # If older than X hours return True.
+    if peer_age > 3600 * settings.refresh_peers_hours:
+        return True
+
+    # If older than X/2 hours randomly return true.
+    # This skews peer lookups so they don't all happen at once.
+    if peer_age > 3600 * settings.refresh_peers_hours / 2:
+        return random.randint(0, 6) == 0
+
+    return False

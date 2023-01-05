@@ -25,10 +25,7 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
     logger.info(f"Host identified as mastodon compatible: {instance.host}")
     await save_mastodon_blocked_instances(session, instance)
 
-    if (
-        not instance.last_ingest_peers
-        or (datetime.datetime.utcnow() - instance.last_ingest_peers).total_seconds > 3600 * 12
-    ):
+    if await utils.should_save_peers(instance):
         await save_mastodon_peered_instance(session, instance)
 
     return True
