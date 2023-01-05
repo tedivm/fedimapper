@@ -70,9 +70,9 @@ def instance_blocks(host: str):
 @app.command()
 @syncify
 async def ingest_instance(host: str):
-    from fedimapper.services import db
+    from fedimapper.services import db_session
 
-    async with db.get_session() as session:
+    async with db_session.get_session() as session:
         await ingest.ingest_host(session, host)
         typer.echo("Ingest complete.")
 
@@ -101,9 +101,9 @@ async def profile_ingest(num_instances: int = typer.Option(5), sort_by: str = ty
     update_tld_names()
     typer.echo("Run queue processing.")
 
-    from fedimapper.services import db
+    from fedimapper.services import db_session
 
-    async with db.get_session() as session:
+    async with db_session.get_session() as session:
         pr = cProfile.Profile()
         pr.enable()
         successes = 0
