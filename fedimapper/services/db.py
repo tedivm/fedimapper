@@ -61,8 +61,6 @@ async def get_session_with_engine(engine: AsyncEngine) -> AsyncSession:
     await session.close()
 
 
-
-
 async def buffer_inserts(session: AsyncSession, stmt, values: List[Dict[Any, Any]]):
     """Breaks up insert statements to prevent deadlocks.
         SQLite inserts are not buffered- its locking system prevents deadlocks.
