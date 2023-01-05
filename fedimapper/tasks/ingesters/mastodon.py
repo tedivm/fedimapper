@@ -147,6 +147,7 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
 
 
 async def save_mastodon_peered_instance(session: Session, instance: Instance):
+    logger.info(f"Attempting to save peers: {instance.host}")
     try:
         # Will throw exceptions when the peer list isn't public.
         peers = mastodon.get_peers(instance.host)
@@ -155,6 +156,7 @@ async def save_mastodon_peered_instance(session: Session, instance: Instance):
         await session.commit()
         await utils.save_peers(session, instance.host, peers)
     except:
+        instance.last_ingest_peers = datetime.datetime.utcnow()
         instance.has_public_peers = False
         await session.commit()
         logger.debug(f"Unable to get instance peer data for {instance.host}")
