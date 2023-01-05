@@ -30,6 +30,7 @@ class Settings(queuerunner.Settings):
     stale_rescan_hours: float = 0.90
     unreachable_rescan_hours: float = 6
     cache_size_robots: int = 8
+    refresh_peers_hours: int = 12
 
     spam_domain_threshold: int = 100
     top_lists_min_threshold: int = 5
