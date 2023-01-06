@@ -1,10 +1,13 @@
-from typing import Any, Dict, List
+from logging import getLogger
+from typing import Any, Dict, List, cast
 
 from pydantic import BaseModel, ConstrainedStr
 
 from fedimapper.settings import settings
 
 from .www import get_json
+
+logger = getLogger(__name__)
 
 
 class LowerCaseStr(ConstrainedStr):
@@ -45,11 +48,6 @@ class NodeInfoInstance(BaseModel):
     metadata: Dict[Any, Any] = {}
 
 
-from logging import getLogger
-
-logger = getLogger(__name__)
-
-
 async def get_nodeinfo(host: str) -> NodeInfoInstance | None:
     try:
         reference = get_json(f"https://{host}/.well-known/nodeinfo")
@@ -63,6 +61,7 @@ async def get_nodeinfo(host: str) -> NodeInfoInstance | None:
         instance = NodeInfoInstance.parse_obj(nodeinfo)
         if not instance.usage.users:
             instance.usage.users = NodeInfoUsers()
+        instance.usage.users = cast(NodeInfoUsers, instance.usage.users)
         return instance
     except:
         logger.exception(f"Unable to parse nodeinfo for host {host}")

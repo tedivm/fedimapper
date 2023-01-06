@@ -1,12 +1,12 @@
 from logging import getLogger
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 import httpx
 from sqlalchemy.orm import Session
 
 from fedimapper.models.instance import Instance
 from fedimapper.services import peertube
-from fedimapper.services.nodeinfo import NodeInfoInstance
+from fedimapper.services.nodeinfo import NodeInfoInstance, NodeInfoUsers
 from fedimapper.tasks.ingesters import utils
 from fedimapper.tasks.ingesters.nodeinfo import save_nodeinfo_stats
 
@@ -63,8 +63,8 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
         status_count = None
 
         if nodeinfo:
-            nodeinfo.usage.localPosts
-            user_count = nodeinfo.usage.users.total
+            user_usage = cast(NodeInfoUsers, nodeinfo.usage.users)
+            user_count = user_usage.total
             status_count = nodeinfo.usage.localPosts
 
         if user_count and status_count:

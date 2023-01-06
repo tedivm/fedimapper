@@ -1,6 +1,6 @@
 import datetime
 from logging import getLogger
-from typing import Any, Dict
+from typing import Any, Dict, cast
 from uuid import uuid4
 
 import httpx
@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance, InstanceStats
 from fedimapper.services import db, mastodon
-from fedimapper.services.nodeinfo import NodeInfoInstance
+from fedimapper.services.nodeinfo import NodeInfoInstance, NodeInfoUsers
 from fedimapper.services.stopwords import get_key_words
 from fedimapper.settings import settings
 from fedimapper.tasks.ingesters import utils
@@ -68,8 +68,9 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
     nodeinfo_monthly_users = None
     nodeinfo_local_posts = None
     if nodeinfo:
-        nodeinfo_total_users = nodeinfo.usage.users.total
-        nodeinfo_monthly_users = nodeinfo.usage.users.activeMonth
+        user_usage = cast(NodeInfoUsers, nodeinfo.usage.users)
+        nodeinfo_total_users = user_usage.total
+        nodeinfo_monthly_users = user_usage.activeMonth
         nodeinfo_local_posts = nodeinfo.usage.localPosts
 
     instance.current_user_count = metadata.get("stats", {}).get("user_count", nodeinfo_total_users)

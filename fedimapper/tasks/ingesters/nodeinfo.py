@@ -1,10 +1,10 @@
 from logging import getLogger
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from sqlalchemy.orm import Session
 
 from fedimapper.models.instance import Instance, InstanceStats
-from fedimapper.services.nodeinfo import NodeInfoInstance
+from fedimapper.services.nodeinfo import NodeInfoInstance, NodeInfoUsers
 
 logger = getLogger(__name__)
 
@@ -35,8 +35,10 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: No
         instance.title = nodeinfo.metadata["nodeName"]
         await session.commit()
 
-    if nodeinfo.usage.users.total and nodeinfo.usage.users.total < 1250000:
-        instance.current_user_count = nodeinfo.usage.users.total
+    user_usage = cast(NodeInfoUsers, nodeinfo.usage.users)
+
+    if user_usage.total and user_usage.total < 1250000:
+        instance.current_user_count = user_usage.total
     else:
         instance.current_user_count = None
 
@@ -46,8 +48,8 @@ async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: No
         instance.current_status_count = None
 
     active_monthly = None
-    if nodeinfo.usage.users.activeMonth and nodeinfo.usage.users.activeMonth < 1250000:
-        active_monthly = nodeinfo.usage.users.activeMonth
+    if user_usage.activeMonth and user_usage.activeMonth < 1250000:
+        active_monthly = user_usage.activeMonth
 
     instance_stats = InstanceStats(
         host=instance.host,
