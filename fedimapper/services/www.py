@@ -124,10 +124,13 @@ def get_node_actual_host(host: str) -> str:
     except:
         return host
 
-    re_match = HOST_RE.search(content.decode("utf-8"))
-    if re_match:
-        groups = re_match.groups()
-        if len(groups) > 0:
-            return groups[0]
+    try:
+        re_match = HOST_RE.search(content.decode("utf-8"))
+        if re_match:
+            groups = re_match.groups()
+            if len(groups) > 0:
+                return groups[0]
+    except:
+        return host
 
     return host
