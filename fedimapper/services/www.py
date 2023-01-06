@@ -1,5 +1,7 @@
 import datetime
 import json
+import re
+from functools import lru_cache
 from threading import Lock
 from typing import Any, Tuple
 from urllib.parse import urlparse
@@ -107,3 +109,25 @@ def get_json(url: str, max_size: int = DEFAULT_MAX_BYTES) -> Any:
     if not content:
         raise NoContent(f"No content body for {url}")
     return json.loads(content.decode("utf-8"), strict=False)
+
+
+HOST_RE = re.compile(r"template=\"https://(?P<host>.*)/.well-known/webfinger", re.MULTILINE)
+
+
+@lru_cache
+def get_node_actual_host(host: str) -> str:
+    try:
+        response, content = get_safe(f"https://{host}/.well-known/host-meta", follow_redirects=True)
+        response.raise_for_status()
+        if not content:
+            return host
+    except:
+        return host
+
+    re_match = HOST_RE.search(content.decode("utf-8"))
+    if re_match:
+        groups = re_match.groups()
+        if len(groups) > 0:
+            return groups[0]
+
+    return host

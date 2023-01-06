@@ -23,7 +23,7 @@ async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance 
         logger.info(f"Attempting to save peers: {instance.host}")
         instance.last_ingest_peers = datetime.datetime.utcnow()
         await session.commit()
-        peers = diaspora.get_peers(instance.host)
+        peers = diaspora.get_peers(instance.www_host)
         if peers and isinstance(peers, set):
             await utils.save_peers(session, instance.host, peers)
 

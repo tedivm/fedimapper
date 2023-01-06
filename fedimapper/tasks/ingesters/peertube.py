@@ -35,10 +35,10 @@ async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance 
 async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
 
     try:
-        metadata = peertube.get_metadata(instance.host)
+        metadata = peertube.get_metadata(instance.www_host)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
-        logger.info(f"Unable to reach host {instance.host}")
+        logger.info(f"Unable to reach host {instance.host} as {instance.www_host}")
         await session.commit()
         return False
     except:
@@ -70,14 +70,14 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
             instance.user_count = user_count
             instance.status_count = status_count
         else:
-            stats = peertube.get_stats(instance.host)
+            stats = peertube.get_stats(instance.www_host)
             instance.user_count = stats.get("totalUsers", None)
             instance.status_count = stats.get("totalVideos", None)
     except httpx.TransportError as exc:
         pass
 
     try:
-        about = peertube.get_about(instance.host)
+        about = peertube.get_about(instance.www_host)
         instance.email = about.get("admin", {}).get("email", None)
     except httpx.TransportError as exc:
         pass
@@ -89,7 +89,7 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
 async def save_peertube_peered_instance(session: Session, instance: Instance) -> bool:
     try:
         # Will throw exceptions when the peer list isn't public.
-        peers_full = peertube.get_peers(instance.host)
+        peers_full = peertube.get_peers(instance.www_host)
         instance.domain_count = peers_full.get("total", None)
         instance.has_public_peers = True
         await session.commit()

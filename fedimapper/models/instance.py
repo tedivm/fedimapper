@@ -14,6 +14,7 @@ class Instance(Base):
     last_ingest_success = Column(DateTime, nullable=True)
     first_ingest_success = Column(DateTime, nullable=True)
     last_ingest_peers = Column(DateTime, nullable=True)
+    www_host = Column(String, nullable=True)
 
     title = Column(String, nullable=True)
     short_description = Column(String, nullable=True)

@@ -35,10 +35,10 @@ async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance 
 async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
 
     try:
-        metadata = mastodon.get_metadata(instance.host)
+        metadata = mastodon.get_metadata(instance.www_host)
     except httpx.TransportError as exc:
         instance.last_ingest_status = "unreachable"
-        logger.info(f"Unable to reach host {instance.host}")
+        logger.info(f"Unable to reach host {instance.host} as {instance.www_host}")
         await session.commit()
         return False
     except:
@@ -98,7 +98,7 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
     try:
         ingest_id = str(uuid4())
         # Will throw exceptions when the ban list isn't public.
-        banned = mastodon.get_blocked_instances(instance.host)
+        banned = mastodon.get_blocked_instances(instance.www_host)
         instance.has_public_bans = True
 
         local_evils = set(settings.evil_domains) | await utils.get_spammers_from_list([x["domain"] for x in banned])
@@ -146,7 +146,7 @@ async def save_mastodon_peered_instance(session: Session, instance: Instance):
     logger.info(f"Attempting to save peers: {instance.host}")
     try:
         # Will throw exceptions when the peer list isn't public.
-        peers = mastodon.get_peers(instance.host)
+        peers = mastodon.get_peers(instance.www_host)
         instance.has_public_peers = True
         instance.last_ingest_peers = datetime.datetime.utcnow()
         await session.commit()
@@ -155,4 +155,4 @@ async def save_mastodon_peered_instance(session: Session, instance: Instance):
         instance.last_ingest_peers = datetime.datetime.utcnow()
         instance.has_public_peers = False
         await session.commit()
-        logger.debug(f"Unable to get instance peer data for {instance.host}")
+        logger.debug(f"Unable to get instance peer data for {instance.host} as {instance.www_host}")

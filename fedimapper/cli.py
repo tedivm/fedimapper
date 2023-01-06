@@ -10,7 +10,7 @@ from ruamel.yaml import YAML
 from tld.utils import update_tld_names
 
 from fedimapper.run import get_next_instance
-from fedimapper.services import mastodon, nodeinfo
+from fedimapper.services import mastodon, nodeinfo, www
 from fedimapper.settings import settings
 from fedimapper.tasks import ingest
 from fedimapper.tasks.ingest import ingest_host
@@ -37,17 +37,17 @@ def syncify(f):
 @app.command()
 @syncify
 async def instance_nodeinfo(host: str):
-    pretty_print(await nodeinfo.get_nodeinfo(host))
+    pretty_print(await nodeinfo.get_nodeinfo(www.get_node_actual_host(host)))
 
 
 @app.command()
 def instance(host: str):
-    pretty_print(mastodon.get_metadata(host))
+    pretty_print(mastodon.get_metadata(www.get_node_actual_host(host)))
 
 
 @app.command()
 def instance_version(host: str):
-    metadata = mastodon.get_metadata(host)
+    metadata = mastodon.get_metadata(www.get_node_actual_host(host))
     if not metadata:
         typer.echo("Unable to get metadata.")
         sys.exit(1)
@@ -61,12 +61,12 @@ def instance_version(host: str):
 
 @app.command()
 def instance_peers(host: str):
-    pretty_print(mastodon.get_peers(host))
+    pretty_print(mastodon.get_peers(www.get_node_actual_host(host)))
 
 
 @app.command()
 def instance_blocks(host: str):
-    pretty_print(mastodon.get_blocked_instances(host))
+    pretty_print(mastodon.get_blocked_instances(www.get_node_actual_host(host)))
 
 
 @app.command()

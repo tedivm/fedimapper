@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from fedimapper.models.asn import ASN
 from fedimapper.models.instance import Instance
-from fedimapper.services import db, networking
+from fedimapper.services import db, networking, www
 from fedimapper.services.nodeinfo import NodeInfoInstance, get_nodeinfo
 from fedimapper.settings import settings
 from fedimapper.tasks.ingesters import diaspora, mastodon, nodeinfo, peertube, utils
@@ -40,11 +40,13 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
 
         # This lookup can be slow as it hits an API, so do it before
         # there are any locks on the database.
-        ip_address = networking.get_ip_from_url(host)
+        web_host = www.get_node_actual_host(host)
+        ip_address = networking.get_ip_from_url(web_host)
 
         # Now do database stuff.
         instance = await get_or_save_host(session, host)
         instance.last_ingest = datetime.datetime.utcnow()
+        instance.www_host = web_host
         if not instance.digest:
             instance.digest = sha256string(host)
 
@@ -67,20 +69,20 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
             logger.debug(f"ASN Saved for {host}")
 
         # Add Reachability Check on port 443
-        index_response, index_contents = networking.can_access_https(host)
+        index_response, index_contents = networking.can_access_https(web_host)
         if not index_response:
             instance.last_ingest_status = "unreachable"
             await session.commit()
-            logger.info(f"Unable to reach {host}")
+            logger.info(f"Unable to reach {host} as {web_host}")
             return False
 
         if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):  # type: ignore
             instance.last_ingest_status = "disabled"
             await session.commit()
-            logger.info(f"Host no longer has hosting {host}")
+            logger.info(f"Host no longer has hosting {host} at {web_host}")
             return False
 
-        nodeinfo = await get_nodeinfo(host)
+        nodeinfo = await get_nodeinfo(web_host)
         if nodeinfo:
             instance.nodeinfo_version = nodeinfo.version
             await session.commit()
