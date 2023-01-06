@@ -63,8 +63,7 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
         status_count = None
 
         if nodeinfo:
-            user_usage = cast(NodeInfoUsers, nodeinfo.usage.users)
-            user_count = user_usage.total
+            user_count = nodeinfo.usage.users.total
             status_count = nodeinfo.usage.localPosts
 
         if user_count and status_count:

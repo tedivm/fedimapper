@@ -28,7 +28,7 @@ class NodeInfoUsers(BaseModel):
 
 
 class NodeInfoUsage(BaseModel):
-    users: NodeInfoUsers | None
+    users: NodeInfoUsers = NodeInfoUsers()
     localPosts: int | None
     localComments: int | None
 
@@ -42,8 +42,8 @@ class NodeInfoInstance(BaseModel):
     version: str
     software: NodeInfoSoftware
     protocols: List[LowerCaseStr] | NodeInfoServices = []
-    services: NodeInfoServices
-    usage: NodeInfoUsage
+    services: NodeInfoServices = NodeInfoServices()
+    usage: NodeInfoUsage = NodeInfoUsage()
     openRegistrations: bool
     metadata: Dict[Any, Any] = {}
 
@@ -53,15 +53,11 @@ async def get_nodeinfo(host: str) -> NodeInfoInstance | None:
         reference = get_json(f"https://{host}/.well-known/nodeinfo")
         nodeinfo_url = reference.get("links", []).pop().get("href", None)
         nodeinfo = get_json(nodeinfo_url)
-        print(nodeinfo)
     except:
         return None
 
     try:
         instance = NodeInfoInstance.parse_obj(nodeinfo)
-        if not instance.usage.users:
-            instance.usage.users = NodeInfoUsers()
-        instance.usage.users = cast(NodeInfoUsers, instance.usage.users)
         return instance
     except:
         logger.exception(f"Unable to parse nodeinfo for host {host}")

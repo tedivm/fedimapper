@@ -68,9 +68,8 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
     nodeinfo_monthly_users = None
     nodeinfo_local_posts = None
     if nodeinfo:
-        user_usage = cast(NodeInfoUsers, nodeinfo.usage.users)
-        nodeinfo_total_users = user_usage.total
-        nodeinfo_monthly_users = user_usage.activeMonth
+        nodeinfo_total_users = nodeinfo.usage.users.total
+        nodeinfo_monthly_users = nodeinfo.usage.users.activeMonth
         nodeinfo_local_posts = nodeinfo.usage.localPosts
 
     instance.current_user_count = metadata.get("stats", {}).get("user_count", nodeinfo_total_users)
