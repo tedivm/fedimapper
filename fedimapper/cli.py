@@ -1,9 +1,11 @@
 import asyncio
+import json
 import sqlite3
 import sys
 from functools import wraps
 
 import typer
+from fastapi.encoders import jsonable_encoder
 from ruamel.yaml import YAML
 from tld.utils import update_tld_names
 
@@ -21,7 +23,7 @@ app = typer.Typer()
 
 
 def pretty_print(data):
-    yaml.dump(data, sys.stdout)
+    yaml.dump(jsonable_encoder(data), sys.stdout)
 
 
 def syncify(f):

@@ -6,13 +6,14 @@ from sqlalchemy.orm import Session
 
 from fedimapper.models.instance import Instance
 from fedimapper.services import diaspora
+from fedimapper.services.nodeinfo import NodeInfoInstance
 from fedimapper.tasks.ingesters import utils
 from fedimapper.tasks.ingesters.nodeinfo import save as nodeinfo_save
 
 logger = getLogger(__name__)
 
 
-async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
     nodeinfo_res = await nodeinfo_save(session, instance, nodeinfo)
     if not nodeinfo_res:
         return False

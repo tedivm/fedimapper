@@ -4,22 +4,21 @@ from typing import Any, Dict
 from sqlalchemy.orm import Session
 
 from fedimapper.models.instance import Instance, InstanceStats
+from fedimapper.services.nodeinfo import NodeInfoInstance
 
 logger = getLogger(__name__)
 
 
-async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
     if not nodeinfo:
-        nodeinfo = {}
+        return False
 
     logger.info(f"Host identified as nodeinfo compatible: {instance.host}")
 
-    software_name = nodeinfo.get("software", {}).get("name", None)
-    if software_name:
-        instance.software = software_name.lower()
+    instance.software = nodeinfo.software.name
 
-    instance.software_version = nodeinfo.get("software", {}).get("version", None)
-    instance.version = nodeinfo.get("software", {}).get("version", None)
+    instance.software_version = nodeinfo.software.version
+    instance.version = nodeinfo.software.version
 
     instance.has_public_bans = False
     instance.has_public_peers = False
@@ -30,46 +29,29 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
     return True
 
 
-async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: Dict[Any, Any]) -> bool:
+async def save_nodeinfo_stats(session: Session, instance: Instance, nodeinfo: NodeInfoInstance) -> bool:
 
-    node_meta = nodeinfo.get("meta", {})
-    if "nodeName" in node_meta:
-        instance.title = node_meta["nodeName"]
+    if "nodeName" in nodeinfo.metadata:
+        instance.title = nodeinfo.metadata["nodeName"]
         await session.commit()
 
-    nodeinfo_usage = nodeinfo.get("usage", None)
-    if not nodeinfo_usage:
-        return False
-
-    user_piece = nodeinfo_usage.get("users", {}).get("total", None)
-    user_count = None
-    if user_piece:
-        if isinstance(user_piece, dict):
-            user_count = user_piece.get("total", None)
-        else:
-            try:
-                user_count = int(user_piece)
-            except:
-                pass
-
-    if user_count and user_count < 1250000:
-        instance.current_user_count = user_count
+    if nodeinfo.usage.users.total and nodeinfo.usage.users.total < 1250000:
+        instance.current_user_count = nodeinfo.usage.users.total
     else:
         instance.current_user_count = None
 
-    local_posts = nodeinfo_usage.get("localPosts", None)
-    if local_posts and local_posts < 1000000000:
-        instance.current_status_count = local_posts
+    if nodeinfo.usage.localPosts and nodeinfo.usage.localPosts < 1000000000:
+        instance.current_status_count = nodeinfo.usage.localPosts
     else:
         instance.current_status_count = None
 
-    active_monthly = nodeinfo_usage.get("users", {}).get("activeMonth", None)
-    if active_monthly and active_monthly > 1250000:
-        active_monthly = None
+    active_monthly = None
+    if nodeinfo.usage.users.activeMonth and nodeinfo.usage.users.activeMonth < 1250000:
+        active_monthly = nodeinfo.usage.users.activeMonth
 
     instance_stats = InstanceStats(
         host=instance.host,
-        user_count=user_count,
+        user_count=instance.current_user_count,
         active_monthly_users=active_monthly,
         status_count=instance.current_status_count,
         domain_count=None,

@@ -6,13 +6,14 @@ from sqlalchemy.orm import Session
 
 from fedimapper.models.instance import Instance
 from fedimapper.services import peertube
+from fedimapper.services.nodeinfo import NodeInfoInstance
 from fedimapper.tasks.ingesters import utils
 from fedimapper.tasks.ingesters.nodeinfo import save_nodeinfo_stats
 
 logger = getLogger(__name__)
 
 
-async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
 
     # The next most common set of services that don't support the above APIs
     # is PeerTube.
@@ -31,7 +32,7 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
     return True
 
 
-async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
 
     try:
         metadata = peertube.get_metadata(instance.host)
@@ -62,9 +63,9 @@ async def save_peertube_metadata(session: Session, instance: Instance, nodeinfo:
         status_count = None
 
         if nodeinfo:
-            usage = nodeinfo.get("usage", {})
-            user_count = usage.get("users", {}).get("total", None)
-            status_count = usage.get("localPosts", None)
+            nodeinfo.usage.localPosts
+            user_count = nodeinfo.usage.users.total
+            status_count = nodeinfo.usage.localPosts
 
         if user_count and status_count:
             instance.user_count = user_count

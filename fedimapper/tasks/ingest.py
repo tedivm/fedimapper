@@ -1,6 +1,6 @@
 import datetime
 from logging import getLogger
-from typing import Any, Callable, Dict, cast
+from typing import Any, Awaitable, Callable, Dict, TypeAlias, cast
 
 import cymruwhois
 from sqlalchemy.dialects.sqlite import insert
@@ -10,18 +10,21 @@ from sqlalchemy.orm import Session
 from fedimapper.models.asn import ASN
 from fedimapper.models.instance import Instance
 from fedimapper.services import db, networking
-from fedimapper.services.nodeinfo import get_nodeinfo
+from fedimapper.services.nodeinfo import NodeInfoInstance, get_nodeinfo
 from fedimapper.settings import settings
 from fedimapper.tasks.ingesters import diaspora, mastodon, nodeinfo, peertube, utils
 from fedimapper.utils.hash import sha256string
 
 logger = getLogger(__name__)
 
+
+ProcessorFunction: TypeAlias = Callable[[Session, Instance, NodeInfoInstance | None], Awaitable[bool]]
+
 PROCESSORS = {
-    "diaspora": diaspora.save,
-    "mastodon": mastodon.save,
-    "nodeinfo": nodeinfo.save,
-    "peertube": peertube.save,
+    "diaspora": cast(ProcessorFunction, diaspora.save),
+    "mastodon": cast(ProcessorFunction, mastodon.save),
+    "nodeinfo": cast(ProcessorFunction, nodeinfo.save),
+    "peertube": cast(ProcessorFunction, peertube.save),
 }
 
 
@@ -79,7 +82,7 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
 
         nodeinfo = await get_nodeinfo(host)
         if nodeinfo:
-            instance.nodeinfo_version = cast(Dict[Any, Any], nodeinfo).get("version", None)
+            instance.nodeinfo_version = nodeinfo.version
             await session.commit()
 
         # Process with service specific function.
@@ -114,11 +117,11 @@ async def mark_success(session: Session, instance: Instance):
     logger.info(f"Successfully processed {instance.host}")
 
 
-async def get_processor(nodeinfo: Dict[Any, Any] | None) -> Callable:
-    if nodeinfo and "software" in nodeinfo:
-        software = nodeinfo["software"].get("name", "").lower()
-        if software in PROCESSORS:
-            return PROCESSORS[software]
+async def get_processor(
+    nodeinfo: NodeInfoInstance | None,
+) -> ProcessorFunction:
+    if nodeinfo and nodeinfo.software.name in PROCESSORS:
+        return PROCESSORS[nodeinfo.software.name]
 
     # Try Mastodon based APIs. There are a lot of non-mastodon services which
     # support the Mastodon APIs, or at least the informational ones.

@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance, InstanceStats
 from fedimapper.services import db, mastodon
+from fedimapper.services.nodeinfo import NodeInfoInstance
 from fedimapper.services.stopwords import get_key_words
 from fedimapper.settings import settings
 from fedimapper.tasks.ingesters import utils
@@ -18,7 +19,7 @@ from fedimapper.tasks.ingesters import utils
 logger = getLogger(__name__)
 
 
-async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
+async def save(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
     if not await save_mastodon_metadata(session, instance, nodeinfo):
         return False
 
@@ -31,10 +32,7 @@ async def save(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | 
     return True
 
 
-async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo: Dict[Any, Any] | None) -> bool:
-    if not nodeinfo:
-        nodeinfo = {}
-    nodeinfo_usage = nodeinfo.get("usage", {})
+async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo: NodeInfoInstance | None) -> bool:
 
     try:
         metadata = mastodon.get_metadata(instance.host)
@@ -51,28 +49,31 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
     instance.short_description = metadata.get("short_description", None)
     instance.email = metadata.get("email", None)
 
-    software = nodeinfo.get("software", {}).get("name", None)
-    if software:
-        instance.software = software.lower()
-
-    version = nodeinfo.get("software", {}).get("version", None)
-    if version:
-        instance.version = version
-        instance.software_version = version
+    if nodeinfo:
+        instance.version = nodeinfo.software.version
+        instance.software_version = nodeinfo.software.version
+        instance.software = nodeinfo.software.name
 
     version_string = metadata.get("version", None)
     if version_string:
         instance.version = version_string
-        version_breakdown = mastodon.get_version_breakdown(version_string)
-        if version_breakdown:
-            if not software:
+        if not nodeinfo:
+            version_breakdown = mastodon.get_version_breakdown(version_string)
+            if version_breakdown:
                 instance.software = version_breakdown.software
-            if not version:
                 instance.software_version = version_breakdown.software_version
-            instance.mastodon_version = version_breakdown.mastodon_version
+                instance.mastodon_version = version_breakdown.mastodon_version
 
-    instance.current_user_count = metadata.get("stats", {}).get("user_count", nodeinfo_usage.get("total", None))
-    instance.current_status_count = metadata.get("stats", {}).get("status_count", None)
+    nodeinfo_total_users = None
+    nodeinfo_monthly_users = None
+    nodeinfo_local_posts = None
+    if nodeinfo:
+        nodeinfo_total_users = nodeinfo.usage.users.total
+        nodeinfo_monthly_users = nodeinfo.usage.users.activeMonth
+        nodeinfo_local_posts = nodeinfo.usage.localPosts
+
+    instance.current_user_count = metadata.get("stats", {}).get("user_count", nodeinfo_total_users)
+    instance.current_status_count = metadata.get("stats", {}).get("status_count", nodeinfo_local_posts)
     instance.current_domain_count = metadata.get("stats", {}).get("domain_count", None)
     instance.thumbnail = metadata.get("thumbnail", None)
 
@@ -81,15 +82,10 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
         instance.registration_open = bool(reg_open)
     instance.approval_required = metadata.get("approval_required", None)
 
-    try:
-        active_monthly_users = nodeinfo_usage.get("users", {}).get("activeMonth", None)
-    except:
-        active_monthly_users = None
-
     instance_stats = InstanceStats(
         host=instance.host,
         user_count=instance.current_user_count,
-        active_monthly_users=active_monthly_users,
+        active_monthly_users=nodeinfo_monthly_users,
         status_count=instance.current_status_count,
         domain_count=instance.current_domain_count,
     )
