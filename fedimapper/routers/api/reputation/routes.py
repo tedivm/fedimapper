@@ -3,11 +3,17 @@ from sqlalchemy import desc, func, select
 
 from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance
+from fedimapper.routers.api.common.schemas.instances import InstanceList
 from fedimapper.services.db import AsyncSession
 from fedimapper.services.db_session import get_session_depends
 from fedimapper.settings import settings
 
-from .schemas.models import BanCount, BanCountListResponse
+from .schemas.models import (
+    BanCount,
+    BanCountListResponse,
+    SubdomainCluster,
+    SubdomainClusterList,
+)
 
 router = APIRouter()
 
@@ -70,3 +76,29 @@ async def get_bans_suspended_ranked(db: AsyncSession = Depends(get_session_depen
     banned_hosts_rows = (await db.execute(banned_hosts_stmt)).all()
     bans = [BanCount.from_orm(row) for row in banned_hosts_rows]
     return BanCountListResponse(hosts=bans)
+
+
+@router.get("/subdomain_clusters", response_model=SubdomainClusterList)
+async def get_subdomain_clusters(db: AsyncSession = Depends(get_session_depends)) -> SubdomainClusterList:
+
+    subdomain_hosts_stmt = (
+        select(Instance.base_domain, func.count(Instance.base_domain).label("count"))
+        .group_by(Instance.base_domain)
+        .order_by(desc("count"))
+        .having(func.count(Instance.base_domain) > 1)
+        .limit(500)
+    )
+    subdomain_hosts_rows = (await db.execute(subdomain_hosts_stmt)).all()
+
+    clusters = [SubdomainCluster(host=row.base_domain, count=row.count) for row in subdomain_hosts_rows]
+    return SubdomainClusterList(clusters=clusters)
+
+
+@router.get("/subdomain_clusters/{cluster_domain}", response_model=InstanceList)
+async def get_subdomain_cluster_instances(
+    cluster_domain: str, db: AsyncSession = Depends(get_session_depends)
+) -> InstanceList:
+    hosts_stmt = select(Instance.host).where(Instance.base_domain == cluster_domain).order_by(Instance.host)
+    hosts_rows = (await db.execute(hosts_stmt)).all()
+    hosts = [row.host for row in hosts_rows]
+    return InstanceList(instances=hosts)

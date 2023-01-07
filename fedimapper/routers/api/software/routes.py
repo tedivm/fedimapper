@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy import and_, desc, func, select
 
 from fedimapper.models.instance import Instance
+from fedimapper.routers.api.common.schemas.instances import InstanceList
 from fedimapper.services.db import AsyncSession
 from fedimapper.services.db_session import get_session_depends
 from fedimapper.settings import UNREADABLE_STATUSES
@@ -40,3 +41,11 @@ async def get_software_stats(db: AsyncSession = Depends(get_session_depends)) ->
 
     software = dict(sorted(software.items(), key=lambda item: item[1].installs, reverse=True))
     return SoftwareList(software=software)
+
+
+@router.get("/{software}", response_model=InstanceList)
+async def get_software_instances(software: str, db: AsyncSession = Depends(get_session_depends)) -> InstanceList:
+    hosts_stmt = select(Instance.host).where(Instance.software == software).order_by(Instance.host)
+    hosts_rows = (await db.execute(hosts_stmt)).all()
+    hosts = [row.host for row in hosts_rows]
+    return InstanceList(instances=hosts)

@@ -35,6 +35,13 @@ def syncify(f):
 
 
 @app.command()
+def generate_openapi_spec():
+    from fedimapper.www import app
+
+    print(json.dumps(app.openapi(), indent=2))
+
+
+@app.command()
 @syncify
 async def instance_nodeinfo(host: str):
     pretty_print(await nodeinfo.get_nodeinfo(www.get_node_actual_host(host)))

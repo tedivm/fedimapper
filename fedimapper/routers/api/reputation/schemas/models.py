@@ -20,3 +20,15 @@ class BanCountListResponse(ResponseBase):
 
     class Config:
         orm_mode = True
+
+
+class SubdomainCluster(BaseModel):
+    host: str
+    count: int
+
+
+class SubdomainClusterList(ResponseBase):
+    clusters: List[SubdomainCluster]
+
+    class Config:
+        orm_mode = True
