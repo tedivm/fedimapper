@@ -49,8 +49,11 @@ def get_language_stop_words(language: str, suppress_error: bool = False) -> Set[
     return results
 
 
+WORD_PATTERN = re.compile(r"[\w-]+", re.IGNORECASE)
+
+
 def get_key_words(language, string) -> Set[str]:
     stop_words = get_language_stop_words(language, suppress_error=True)
-    words = re.split("\W", string)
+    words = WORD_PATTERN.findall(string)
     words = [word.lower() for word in words if len(word) > 2]
     return set([word for word in words if word not in stop_words])
