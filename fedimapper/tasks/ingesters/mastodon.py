@@ -57,12 +57,12 @@ async def save_mastodon_metadata(session: Session, instance: Instance, nodeinfo:
     version_string = metadata.get("version", None)
     if version_string:
         instance.version = version_string
-        if not nodeinfo:
-            version_breakdown = mastodon.get_version_breakdown(version_string)
-            if version_breakdown:
+        version_breakdown = mastodon.get_version_breakdown(version_string)
+        if version_breakdown:
+            instance.mastodon_version = version_breakdown.mastodon_version
+            if not nodeinfo:
                 instance.software = version_breakdown.software
                 instance.software_version = version_breakdown.software_version
-                instance.mastodon_version = version_breakdown.mastodon_version
 
     nodeinfo_total_users = None
     nodeinfo_monthly_users = None

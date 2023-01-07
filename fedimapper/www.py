@@ -9,6 +9,7 @@ from fedimapper.routers.api.instances.routes import router as instance_router
 from fedimapper.routers.api.meta.routes import router as meta_router
 from fedimapper.routers.api.reputation.routes import router as reputation_router
 from fedimapper.routers.api.software.routes import router as software_router
+from fedimapper.routers.api.world.routes import router as world_router
 from fedimapper.utils.openapi import deterministic_operation_ids
 
 from . import VERSION
@@ -27,17 +28,21 @@ app = FastAPI(
 
 app.mount("/static", StaticFiles(directory=static_file_path), name="static")
 
+
+app.include_router(world_router, prefix="/api/v1/world", tags=["World"], default_response_class=CachedJSONResponse)
+
+
 app.include_router(
-    software_router, prefix="/api/v1/software", tags=["software"], default_response_class=CachedJSONResponse
+    software_router, prefix="/api/v1/software", tags=["Software"], default_response_class=CachedJSONResponse
 )
 app.include_router(
-    instance_router, prefix="/api/v1/instances", tags=["instances"], default_response_class=CachedJSONResponse
+    instance_router, prefix="/api/v1/instances", tags=["Instances"], default_response_class=CachedJSONResponse
 )
 app.include_router(
-    reputation_router, prefix="/api/v1/reputation", tags=["reputation"], default_response_class=CachedJSONResponse
+    reputation_router, prefix="/api/v1/reputation", tags=["Reputation"], default_response_class=CachedJSONResponse
 )
 
-app.include_router(meta_router, prefix="/api/v1/meta", tags=["meta"])
+app.include_router(meta_router, prefix="/api/v1/meta", tags=["Meta"])
 
 deterministic_operation_ids(app)
 

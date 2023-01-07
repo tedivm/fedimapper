@@ -45,7 +45,10 @@ async def get_software_stats(db: AsyncSession = Depends(get_session_depends)) ->
 
 @router.get("/{software}", response_model=InstanceList)
 async def get_software_instances(software: str, db: AsyncSession = Depends(get_session_depends)) -> InstanceList:
-    hosts_stmt = select(Instance.host).where(Instance.software == software).order_by(Instance.host)
+    if software == "unknown":
+        hosts_stmt = select(Instance.host).where(Instance.software == None).order_by(Instance.host)
+    else:
+        hosts_stmt = select(Instance.host).where(Instance.software == software).order_by(Instance.host)
     hosts_rows = (await db.execute(hosts_stmt)).all()
     hosts = [row.host for row in hosts_rows]
     return InstanceList(instances=hosts)
