@@ -146,7 +146,7 @@ async def save_asn(session: Session, asn: cymruwhois.asrecord) -> None:
             {
                 "asn": asn.asn,
                 "cc": asn.cc,
-                "company": networking.clean_asn_company(asn.cc),
+                "company": networking.clean_asn_company(asn.owner),
                 "owner": asn.owner,
                 "prefix": asn.prefix,
             }
