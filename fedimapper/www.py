@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fedimapper.routers.api.common.responses.cached_json import CachedJSONResponse
 from fedimapper.routers.api.instances.routes import router as instance_router
 from fedimapper.routers.api.meta.routes import router as meta_router
+from fedimapper.routers.api.networks.routes import router as networks_router
 from fedimapper.routers.api.reputation.routes import router as reputation_router
 from fedimapper.routers.api.software.routes import router as software_router
 from fedimapper.routers.api.world.routes import router as world_router
@@ -41,6 +42,10 @@ app.include_router(
 app.include_router(
     reputation_router, prefix="/api/v1/reputation", tags=["Reputation"], default_response_class=CachedJSONResponse
 )
+app.include_router(
+    networks_router, prefix="/api/v1/networks", tags=["Networks"], default_response_class=CachedJSONResponse
+)
+
 
 app.include_router(meta_router, prefix="/api/v1/meta", tags=["Meta"])
 
