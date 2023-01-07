@@ -20,5 +20,8 @@ jobs:
       - name: Install Dependencies
         run: make install
 
+      - name: Get Project Data
+        run: make build_data
+
       - name: Run Tests
         run: make pytest

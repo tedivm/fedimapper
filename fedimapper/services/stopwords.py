@@ -43,7 +43,7 @@ def get_language_stop_words(language: str, suppress_error: bool = False) -> Set[
             results = set(fp.read().split("\n"))
     except:
         if suppress_error:
-            return Set([])
+            return set([])
         raise
 
     return results
