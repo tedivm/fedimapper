@@ -11,7 +11,6 @@ class NetworkStats(BaseModel):
     users: int | None = 0
     company: str | None
     cc: str | None
-    company: str | None
     prefix: str | None
 
     class Config:
