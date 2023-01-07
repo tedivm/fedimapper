@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 
 from pydantic import BaseModel
 
@@ -9,8 +9,9 @@ from fedimapper.routers.api.common.schemas.instances import InstanceList
 class NetworkStats(BaseModel):
     installs: int
     users: int | None = 0
-    owner: str | None
+    company: str | None
     cc: str | None
+    company: str | None
     prefix: str | None
 
     class Config:
@@ -21,5 +22,15 @@ class NetworkList(ResponseBase):
     network: Dict[str, NetworkStats]
 
 
-class ASN(InstanceList):
-    owner: str | None
+class ASN(BaseModel):
+    asn: str | None
+    company: str | None
+    instances: List[str]
+
+
+class ASNResponse(ASN, ResponseBase):
+    pass
+
+
+class ISP(ResponseBase):
+    networks: List[ASN]
