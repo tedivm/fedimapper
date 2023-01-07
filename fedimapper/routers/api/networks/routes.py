@@ -47,7 +47,7 @@ async def get_network_stats(db: AsyncSession = Depends(get_session_depends)) -> 
     for row in known_rows:
         network = NetworkStats.from_orm(row)
         arn_record = asn_map.get(row.asn, None)
-        if network:
+        if arn_record:
             network.owner = arn_record.owner
             network.cc = arn_record.cc
             network.prefix = arn_record.prefix
