@@ -141,11 +141,22 @@ async def get_or_save_host(db: Session, host) -> Instance:
 
 
 async def save_asn(session: Session, asn: cymruwhois.asrecord) -> None:
-    asn_insert_stmt = insert(ASN).values([{"asn": asn.asn, "cc": asn.cc, "owner": asn.owner, "prefix": asn.prefix}])
+    asn_insert_stmt = insert(ASN).values(
+        [
+            {
+                "asn": asn.asn,
+                "cc": asn.cc,
+                "company": networking.clean_asn_company(asn.cc),
+                "owner": asn.owner,
+                "prefix": asn.prefix,
+            }
+        ]
+    )
     asn_update_statement = asn_insert_stmt.on_conflict_do_update(
         index_elements=["asn"],
         set_=dict(
             cc=asn_insert_stmt.excluded.cc,
+            company=asn_insert_stmt.excluded.company,
             owner=asn_insert_stmt.excluded.owner,
             prefix=asn_insert_stmt.excluded.prefix,
         ),

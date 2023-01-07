@@ -1,3 +1,4 @@
+import re
 import socket
 from typing import Tuple
 
@@ -36,3 +37,59 @@ def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
 
     except (httpx.TransportError, SafetyException) as exc:
         return False, None
+
+
+ASN_REGEXES = [
+    # THE-1984-AS -> THE-1986
+    re.compile(r"^(THE-[A-Z\d]*)-(?:A[SP]N?)"),
+    #
+    # UNI2-AS -> UNI2
+    re.compile(r"^([A-Z\d]*)-(?:A[SP]N?)"),
+    #
+    # ALIBABA-CN-NET -> ALIBABA
+    re.compile(r"^([A-Z\d]*)-CN-NET"),
+    #
+    # HETZNER-AS -> HETZNER
+    # HETZNER-CLOUD3-AS -> HETZNER-CLOUD
+    re.compile(r"^([A-Z-]*)\d*-(?:A[SP]N?)"),
+    #
+    # ORACLE-BMC-31898 - ORACLE-BMC
+    re.compile(r"^([A-Z-]*)-\d+"),
+    #
+    # AS-CHOOPA -> CHOOPA
+    re.compile(r"^AS-([A-Z]*), [A-Z]{2}"),
+    #
+    # All Caps no spaces or punctuation.
+    re.compile(r"^([A-Z]*), [A-Z]{2}"),
+]
+
+
+def clean_asn_company(company: str) -> str:
+
+    if company.startswith("LEASEWEB"):
+        return "LEASEWEB"
+
+    for PATTERN in ASN_REGEXES:
+        if results := PATTERN.search(company):
+            return results.group(1)
+
+    # Remove country postfix
+    company = company[:-4]
+
+    company_parts = company.split()
+    if len(company_parts) < 2:
+        return company
+
+    if company_parts[0] == company_parts[0].upper():
+
+        # URL Check
+        if company_parts[1] == company_parts[1].lower():
+            if "." in company_parts[1]:
+                return company_parts[0]
+
+        # Repeats Check
+        if len(company_parts[0]) > 4:
+            if company_parts[1].upper().startswith(company_parts[0]):
+                return company_parts[0]
+
+    return company

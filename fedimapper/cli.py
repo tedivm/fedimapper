@@ -147,5 +147,19 @@ def word_test(language="english", message="The little brown dog did stuff."):
     print(stopwords.get_key_words(language, message))
 
 
+@app.command()
+def asn_test():
+    from tabulate import tabulate
+
+    from fedimapper.services.networking import clean_asn_company
+
+    output = []
+    with open("network_list.json") as fp:
+        networks = json.load(fp)
+        for asn, network in networks["network"].items():
+            output.append([asn, clean_asn_company(network["owner"]), network["owner"]])
+    print(tabulate(output))
+
+
 if __name__ == "__main__":
     app()

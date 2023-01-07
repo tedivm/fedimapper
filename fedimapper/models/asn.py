@@ -8,5 +8,6 @@ class ASN(Base):
 
     asn = Column(String, primary_key=True)
     cc = Column(String, nullable=True)
+    company = Column(String, nullable=True, index=True)
     owner = Column(String, nullable=True)
     prefix = Column(String, nullable=True)
