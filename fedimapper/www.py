@@ -11,6 +11,7 @@ from fedimapper.routers.api.networks.routes import router as networks_router
 from fedimapper.routers.api.reputation.routes import router as reputation_router
 from fedimapper.routers.api.software.routes import router as software_router
 from fedimapper.routers.api.world.routes import router as world_router
+from fedimapper.settings import settings
 from fedimapper.utils.openapi import deterministic_operation_ids
 
 from . import VERSION
@@ -18,13 +19,13 @@ from . import VERSION
 static_file_path = os.path.dirname(os.path.realpath(__file__)) + "/static"
 
 description = """
-Fedimapper exposes a read only API that describes Fediverse Instances and how they relate to each other.
+{settings.project_name} exposes a read only API that describes Fediverse Instances and how they relate to each other.
 
 Follow this project on [Github](https://github.com/tedivm/fedimapper/).
 """
 
 app = FastAPI(
-    title="fedimapper",
+    title=settings.project_name,
     version=VERSION,
     description=description,
 )
