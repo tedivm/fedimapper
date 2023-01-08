@@ -27,7 +27,7 @@ async def ban_response_from_rows(db: AsyncSession, banned_hosts_rows):
     bans = []
     for row in banned_hosts_rows:
         ban = BanCount.from_orm(row)
-        ban.keywords = await get_ban_keywords(db, ban.banned_host)
+        ban.keywords = await get_ban_keywords(db, ban.banned_host, threshold=2)
         bans.append(ban)
     return BanCountListResponse(hosts=bans)
 
