@@ -1,6 +1,6 @@
 import re
 import socket
-from typing import Tuple
+from typing import Literal, Tuple
 
 import cymruwhois
 import httpx
@@ -20,7 +20,7 @@ def get_asn_data(ip) -> cymruwhois.asrecord:
     return client.lookup(ip)
 
 
-def can_access_https(host) -> Tuple[bool | httpx.Response, str | None]:
+def can_access_https(host) -> Tuple[Literal[False] | httpx.Response, str | None]:
     try:
         # Ignore Robots.txt on this call due to a chicken/egg problem- we need to know
         # if the HTTPS service is accessible before we can pull files from it, and the

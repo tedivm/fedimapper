@@ -72,7 +72,7 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
         # Add Reachability Check on port 443
         index_response, index_contents = networking.can_access_https(web_host)
 
-        if not is_reachable(index_response, index_contents):
+        if not index_response or not is_reachable(index_response, index_contents):
             instance.last_ingest_status = "unreachable"
             await session.commit()
             logger.info(f"Unable to reach {host} as {web_host}")
