@@ -19,6 +19,8 @@ static_file_path = os.path.dirname(os.path.realpath(__file__)) + "/static"
 
 description = """
 Fedimapper exposes a read only API that describes Fediverse Instances and how they relate to each other.
+
+Follow this project on [Github](https://github.com/tedivm/fedimapper/).
 """
 
 app = FastAPI(
