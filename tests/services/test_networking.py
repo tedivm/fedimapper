@@ -9,7 +9,8 @@ COMPANY_TESTS = [
     ["TWC", "TWC-11426-CAROLINAS, US"],
     ["UNI2", "UNI2-AS, ES"],
     ["THE-1984", "THE-1984-AS, IS"],
-    ["CLOUDFLARENET", "CLOUDFLARENET, US"],
+    ["CLOUDFLARE", "CLOUDFLARENET, US"],
+    ["CLOUDFLARE", "CLOUDFLARESPECTRUM, US"],
     ["HETZNER", "HETZNER-AS, DE"],
     ["DIGITALOCEAN", "DIGITALOCEAN-ASN, US"],
     ["AKAMAI", "AKAMAI-AP Akamai Technologies, Inc., SG"],
@@ -28,6 +29,8 @@ COMPANY_TESTS = [
     ["BIGLOBE", "BIGLOBE BIGLOBE Inc., JP"],
     ["ALIBABA", "ALIBABA-CN-NET Alibaba US Technology Co., Ltd., CN"],
     ["MILKYWAN", "MILKYWAN MilkyWan, FR"],
+    ["ROUTELABEL", "ASN-ROUTELABEL, NL"],
+    ["6NETWORK", "ASN-6NETWORK *** IoT Zrt *** Last-Mile Kft ***, HU"],
 ]
 
 

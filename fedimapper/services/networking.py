@@ -54,24 +54,41 @@ ASN_REGEXES = [
     re.compile(r"^([A-Z-]*)\d*-(?:A[SP]N?)"),
     #
     # ORACLE-BMC-31898 - ORACLE-BMC
-    re.compile(r"^([A-Z-]*)-\d+"),
+    re.compile(r"^([A-Z-]*)-\d+[\s|-|,]"),
     #
     # AS-CHOOPA -> CHOOPA
-    re.compile(r"^AS-([A-Z]*), [A-Z]{2}"),
+    # ASN-ROUTELABEL -> ROUTELABEL
+    re.compile(r"^ASN?-([A-Z]*), [A-Z]{2}"),
     #
     # All Caps no spaces or punctuation.
     re.compile(r"^([A-Z]*), [A-Z]{2}"),
 ]
 
+# These companies have multiple ASNs with different suffixes
+COMPANY_STARTSWITH = [
+    "LEASEWEB",
+    "SAKURA",
+    "CLOUDFLARE",
+    "TWC",
+    # This one is just annoying
+    "SWITCH Peering",
+]
+
 
 def clean_asn_company(company: str) -> str:
 
-    if company.startswith("LEASEWEB"):
-        return "LEASEWEB"
+    for prefix in COMPANY_STARTSWITH:
+        if company.startswith(prefix):
+            return prefix
 
     for PATTERN in ASN_REGEXES:
         if results := PATTERN.search(company):
+            print(PATTERN)
             return results.group(1)
+
+    # These people have the most ridiculous cc entry.
+    if "6NETWORK" in company:
+        return "6NETWORK"
 
     # Remove country postfix
     company = company[:-4]
@@ -89,7 +106,13 @@ def clean_asn_company(company: str) -> str:
 
         # Repeats Check
         if len(company_parts[0]) > 4:
-            if company_parts[1].upper().startswith(company_parts[0]):
+            # Sometimes words are duplicated back to back just with different casing.
+            if company_parts[1].upper().startswith(company_parts[0].upper()):
+                return company_parts[0]
+
+            # Sometimes the first field mirrors the second with additional characters.
+            # VOCUSGROUPNZ VocusGroup
+            if company_parts[0].upper().startswith(company_parts[1].upper()):
                 return company_parts[0]
 
     return company
