@@ -5,7 +5,7 @@ from pydantic import BaseModel, Field
 
 class ResponseBase(BaseModel):
     class Config:
-        allow_mutation = False
+        allow_mutation = True
         extra = "forbid"
         orm_mode = True
 

@@ -6,6 +6,12 @@ from pydantic import BaseModel, HttpUrl
 from fedimapper.routers.api.common.schemas.base import ResponseBase
 
 
+class InstanceModeration(BaseModel):
+    all_keywords: Dict[str, int] = {}
+    block_keywords: Dict[str, int] = {}
+    silence_keywords: Dict[str, int] = {}
+
+
 class InstanceResponse(ResponseBase):
     host: str
     www_host: str | None
@@ -21,6 +27,8 @@ class InstanceResponse(ResponseBase):
     current_user_count: int | None
     current_status_count: int | None
     current_domain_count: int | None
+
+    reputation: InstanceModeration = InstanceModeration()
 
     thumbnail: HttpUrl | None
 

@@ -1,13 +1,10 @@
-import logging
 from contextlib import asynccontextmanager
 from typing import Any, Dict, List
-from urllib.parse import urlparse
 
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
 
 from ..settings import settings
 

@@ -10,6 +10,7 @@ class BanCount(BaseModel):
     banned_host: str
     blocked_instances: int = 0
     blocked_population: int = 0
+    keywords: Dict[str, int] = {}
 
     class Config:
         orm_mode = True

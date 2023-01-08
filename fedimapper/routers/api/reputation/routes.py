@@ -7,6 +7,7 @@ from fedimapper.routers.api.common.schemas.instances import InstanceList
 from fedimapper.services.db import AsyncSession
 from fedimapper.services.db_session import get_session_depends
 from fedimapper.settings import settings
+from fedimapper.utils.banstats import get_ban_keywords
 
 from .schemas.models import (
     BanCount,
@@ -20,6 +21,15 @@ router = APIRouter()
 from logging import getLogger
 
 logger = getLogger(__name__)
+
+
+async def ban_response_from_rows(db: AsyncSession, banned_hosts_rows):
+    bans = []
+    for row in banned_hosts_rows:
+        ban = BanCount.from_orm(row)
+        ban.keywords = await get_ban_keywords(db, ban.banned_host)
+        bans.append(ban)
+    return BanCountListResponse(hosts=bans)
 
 
 @router.get("/bans", response_model=BanCountListResponse)
@@ -36,8 +46,7 @@ async def get_bans_ranked(db: AsyncSession = Depends(get_session_depends)) -> Ba
         .having(func.count(Ban.banned_host) >= settings.top_lists_min_threshold)
     )
     banned_hosts_rows = (await db.execute(banned_hosts_stmt)).all()
-    bans = [BanCount.from_orm(row) for row in banned_hosts_rows]
-    return BanCountListResponse(hosts=bans)
+    return await ban_response_from_rows(db, banned_hosts_rows)
 
 
 @router.get("/bans/silenced", response_model=BanCountListResponse)
@@ -55,8 +64,7 @@ async def get_bans_silenced_ranked(db: AsyncSession = Depends(get_session_depend
         .having(func.count(Ban.banned_host) >= settings.top_lists_min_threshold)
     )
     banned_hosts_rows = (await db.execute(banned_hosts_stmt)).all()
-    bans = [BanCount.from_orm(row) for row in banned_hosts_rows]
-    return BanCountListResponse(hosts=bans)
+    return await ban_response_from_rows(db, banned_hosts_rows)
 
 
 @router.get("/bans/suspended", response_model=BanCountListResponse)
@@ -74,8 +82,7 @@ async def get_bans_suspended_ranked(db: AsyncSession = Depends(get_session_depen
         .having(func.count(Ban.banned_host) >= settings.top_lists_min_threshold)
     )
     banned_hosts_rows = (await db.execute(banned_hosts_stmt)).all()
-    bans = [BanCount.from_orm(row) for row in banned_hosts_rows]
-    return BanCountListResponse(hosts=bans)
+    return await ban_response_from_rows(db, banned_hosts_rows)
 
 
 @router.get("/subdomain_clusters", response_model=SubdomainClusterList)
