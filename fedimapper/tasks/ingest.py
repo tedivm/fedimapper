@@ -3,6 +3,7 @@ from logging import getLogger
 from typing import Any, Awaitable, Callable, Dict, TypeAlias, cast
 
 import cymruwhois
+import httpx
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
@@ -70,13 +71,14 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
 
         # Add Reachability Check on port 443
         index_response, index_contents = networking.can_access_https(web_host)
-        if not index_response:
+
+        if not is_reachable(index_response, index_contents):
             instance.last_ingest_status = "unreachable"
             await session.commit()
             logger.info(f"Unable to reach {host} as {web_host}")
             return False
 
-        if index_response.status_code == 530 or (index_contents and "domain parking" in index_contents.lower()):  # type: ignore
+        if index_response.status_code == 530:
             instance.last_ingest_status = "disabled"
             await session.commit()
             logger.info(f"Host no longer has hosting {host} at {web_host}")
@@ -163,3 +165,17 @@ async def save_asn(session: Session, asn: cymruwhois.asrecord) -> None:
     )
     await session.execute(asn_update_statement)
     await session.commit()
+
+
+def is_reachable(index_response: httpx.Response, index_contents: str | None):
+    if not index_response:
+        return False
+
+    if index_contents:
+        index_contents_lc = index_contents.lower()
+        if "domain parking" in index_contents_lc:
+            return False
+        if "ERR_NGROK_3200" in index_contents_lc:
+            return False
+
+    return True
