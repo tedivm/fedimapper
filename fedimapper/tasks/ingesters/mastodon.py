@@ -139,6 +139,9 @@ async def save_mastodon_blocked_instances(session: Session, instance: Instance):
 
     except:
         instance.has_public_bans = False
+        ban_delete_stmt = delete(Ban).where(and_(Ban.host == instance.host))
+        await session.execute(ban_delete_stmt)
+        await session.commit()
         logger.debug(f"Unable to get instance ban data for {instance.host}")
 
 
