@@ -83,7 +83,6 @@ def clean_asn_company(company: str) -> str:
 
     for PATTERN in ASN_REGEXES:
         if results := PATTERN.search(company):
-            print(PATTERN)
             return results.group(1)
 
     # These people have the most ridiculous cc entry.

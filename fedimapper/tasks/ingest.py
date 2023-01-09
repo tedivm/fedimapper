@@ -4,11 +4,13 @@ from typing import Any, Awaitable, Callable, Dict, TypeAlias, cast
 
 import cymruwhois
 import httpx
+from sqlalchemy import and_, delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
 from fedimapper.models.asn import ASN
+from fedimapper.models.ban import Ban
 from fedimapper.models.instance import Instance
 from fedimapper.services import db, networking, www
 from fedimapper.services.nodeinfo import NodeInfoInstance, get_nodeinfo
@@ -83,6 +85,13 @@ async def ingest_host(session: AsyncSession, host: str) -> bool:
             await session.commit()
             logger.info(f"Host no longer has hosting {host} at {web_host}")
             return False
+
+        # Robot blocks
+        if not www.can_crawl(f"https://{web_host}/"):
+            instance.last_ingest_status = "robots_blocked"
+            await clear_instance(session, instance)
+            await session.commit()
+            logger.info(f"Host is blocked by robots.tx {host}")
 
         nodeinfo = await get_nodeinfo(web_host)
         if nodeinfo:
@@ -179,3 +188,32 @@ def is_reachable(index_response: httpx.Response, index_contents: str | None):
             return False
 
     return True
+
+
+async def clear_instance(session: Session, instance: Instance):
+    instance.title = None
+    instance.short_description = None
+    instance.email = None
+    instance.version = None
+
+    instance.current_user_count = None
+    instance.current_status_count = None
+    instance.current_domain_count = None
+
+    instance.thumbnail = None
+
+    instance.registration_open = None
+    instance.approval_required = None
+
+    instance.has_public_bans = None
+    instance.has_public_peers = None
+
+    instance.software = None
+    instance.mastodon_version = None
+    instance.software_version = None
+    instance.nodeinfo_version = None
+
+    # Delete bans from this host as well.
+    ban_delete_stmt = delete(Ban).where(Ban.host == instance.host)
+    await session.execute(ban_delete_stmt)
+    await session.commit()
