@@ -21,7 +21,6 @@ class InstanceResponse(ResponseBase):
 
     title: str | None
     short_description: str | None
-    email: str | None
     version: str | None
 
     current_user_count: int | None
