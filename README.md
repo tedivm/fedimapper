@@ -16,6 +16,25 @@ This API exposes a lot of fun information-
 The Fediverse needs an API, and I like creating crawlers. The hope is that an easy to use API for the Fediverse will allow people to build tools on top of it- the idea is to reduce the barrier of entry by making it so people do not have to build and run their own web crawlers.
 
 
+## Block this Bot
+
+Have an instance and don't want us crawling it? Block this bot with your `robots.txt`! We use two separate user agents- `fedimapper` is used by the development version and anyone who clones this repo, while the FediverseAlmanac uses `FediverseAlmanac` for its user agent. To stop both add this to your `robots.txt` file.
+
+```
+User-agent: fedimapper
+  Disallow: /
+User-agent: FediverseAlmanac
+  Disallow: /
+```
+
+
+Just want to stop us from reading your block list, but otherwise are okay with metadata being included? Update your `robots.txt` to forbid crawling of your domain blocks endpoint. You can enable this for all crawlers (although I can't promise others will honor it).
+
+```
+User-agent: *
+  Disallow: /api/v1/instance/domain_blocks
+```
+
 ## Sponsorship
 
 This project is developed and hosted by [Robert Hafner](https://blog.tedivm.com), who currently pays for it out of pocket. If you find this project useful  please consider sponsoring me using Github!
